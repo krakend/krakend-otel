@@ -1,0 +1,107 @@
+{
+    "version": 3,
+    "name": "Middle KrakenD",
+    "port": 54445,
+    "cache_ttl": "3600s",
+    "timeout": "2500ms",
+    "host": [ "http://127.0.0.1:54446/" ],
+    "endpoints": [
+        {
+            "endpoint": "/middle_fake/{something}",
+            "concurrent_calls": 3,
+            "backend": [
+                {
+                    "url_pattern": "/back_fake/{something}"
+                }
+            ]
+        },
+        {
+            "endpoint": "/middle_combination/{id}",
+            "backend": [
+                {
+                    "url_pattern": "/back_combination/{id}",
+                    "group": "middle_1"
+                },
+                {
+                    "url_pattern": "/back_combination/{id}",
+                    "group": "middle_2"
+                }
+            ]
+        }
+    ],
+    "extra_config": {
+        "telemetry/opentelemetry": {
+            "service_name": "krakend_middle_service",
+            "layers": {
+                "router": {
+                    "metrics": true,
+                    "traces": true,
+                    "disable_propagation": false
+                },
+                "pipe": {
+                    "metrics": true,
+                    "traces": true
+                }, 
+                "backend": {
+                    "metrics": {
+                        "stage": true,
+                        "round_trip": true,
+                        "read_payload": true,
+                        "detailed_connection": true,
+                        "static_attributes": {
+                            "my_metric_attr": "my_middle_metric"
+                        }
+                    },
+                    "traces": {
+                        "stage": true,
+                        "round_trip": true,
+                        "read_payload": true,
+                        "detailed_connection": true,
+                        "static_attributes": {
+                            "my_trace_attr": "my_middle_trace" 
+                        }
+                    }
+                }
+            },
+            "exporters": {
+                "local_prometheus": {
+                    "kind": "prometheus",
+                    "config": {
+                        "port": 59092,
+                        "process_metrics": true,
+                        "go_metrics": true
+                    }
+                },
+                "local_tempo": {
+                    "kind": "opentelemetry",
+                    "config": {
+                        "host": "127.0.0.1",
+                        "port": 54317,
+                        "use_http": false
+                    }
+                },
+                "local_jaeger": {
+                    "kind": "opentelemetry",
+                    "config": {
+                        "host": "127.0.0.1",
+                        "port": 55317,
+                        "use_http": false
+                    }
+                }
+            },
+            "metric_providers": [
+                "local_prometheus"
+            ],
+            "metric_reporting_period": 1,
+            "trace_providers": [
+                "local_tempo",
+                "local_jaeger"
+            ],
+            "trace_sample_rate": 1,
+            "extra": {
+                "custom": "extra",
+                "future_expansion": true
+            }
+        }
+    }
+}
