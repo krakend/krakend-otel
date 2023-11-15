@@ -1,0 +1,102 @@
+volumes:
+  vol_tempo:
+  vol_grafana:
+  vol_prometheus:
+services:
+  krakend_front:
+    domainname: krakend_front
+    image: krakend-otel-example:latest
+    volumes:
+      - "./conf/krakend_front:/etc/krakend"
+    ports:
+      - "44444:44444"
+      - "9091:9090"
+  krakend_middle:
+    domainname: krakend_middle
+    image: krakend-otel-example:latest
+    volumes:
+      - "./conf/krakend_middle:/etc/krakend"
+    ports:
+      - "44445:44445"
+      - "9092:9090"
+  krakend_back:
+    domainname: krakend_back
+    image: krakend-otel-example:latest
+    volumes:
+      - "./conf/krakend_back:/etc/krakend"
+    ports:
+      - "44446:44446"
+      - "9093:9090"
+  loki:
+    image: grafana/loki:latest
+    domainname: loki
+    healthcheck:
+      test: [CMD, wget, --spicer, -S, http://localhost:3100/ready]
+    ports:
+      - "3100:3100"
+  tempo:
+    image: grafana/tempo:latest
+    domainname: tempo
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - "./conf/tempo/tempo.yaml:/etc/tempo.yaml"
+      - "vol_tempo:/tmp/tempo"
+    ports:
+      - "3200:3200"     # tempo
+      - "9095:9095"     # tempo grpc
+      - "4317:4317"     # otlp grpc
+      - "4318:4318"     # otlp http
+  prometheus:
+    image: prom/prometheus:latest
+    domainname: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - "./conf/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "vol_prometheus:/prometheus"
+    depends_on:
+      - krakend_front
+      - krakend_middle
+      - krakend_back
+  grafana:
+    image: grafana/grafana:latest
+    domainname: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: krakend
+      GF_SECURITY_ADMIN_PASSWORD: krakend
+      GF_AUT_ANONYMOUS_ENABLED: "true"
+    volumes:
+      - "vol_grafana:/var/lib/grafana"
+      - "./conf/grafana/conf/provisioning/datasources:/etc/grafana/provisioning/datasources"
+      - "./conf/grafana/conf/provisioning/dashboards:/etc/grafana/provisioning/dashboards"
+      - "./conf/grafana/conf/data/dashboards:/var/lib/grafana/dashboards"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+  jaeger:
+    image: jaegertracing/all-in-one:1.54
+    domainname: jaeger
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+    ports:
+      - "5778:5778" # serve configs 
+      - "16686:16686" # serve frontend UI
+      - "5317:4317"   # otlp grpc: we remap this to be able to run other envs
+      - "5318:4318"   # otlp http: we reamp this to be able to run other envs
+    deploy:
+      resources:
+        limits:
+          memory: 4096M
+  fakeapi:
+    image: dhontecillas/reqstatsrv:latest
+    domainname: fakeapi
+    ports:
+      - "9876:9876"
+    command:
+      - "./reqstatsrv"
+      - "/etc/reqstatsrv/config/example.dockerized.json"
+    volumes:
+      - "./conf.local/fakeapi:/etc/reqstatsrv"

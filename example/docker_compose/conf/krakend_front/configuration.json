@@ -1,0 +1,150 @@
+{
+    "version": 3,
+    "name": "Front KrakenD",
+    "port": 44444,
+    "cache_ttl": "3600s",
+    "timeout": "2500ms",
+    "host": [ "http://krakend_middle:44445/" ],
+    "endpoints": [
+        {
+            "endpoint": "/fake/{something}",
+            "concurrent_calls": 3,
+            "backend": [
+                {
+                    "url_pattern": "/middle_fake/{something}"
+                }
+            ]
+        },
+        {
+            "endpoint": "/combination/{id}",
+            "backend": [
+                {
+                    "url_pattern": "/middle_combination/{id}",
+                    "group": "front_1"
+                },
+                {
+                    "url_pattern": "/middle_combination/{id}",
+                    "group": "front_2"
+                }
+            ]
+        },
+        {
+            "endpoint": "/direct/slow",
+            "backend": [
+                {
+                    "host": ["http://fakeapi:9876"],
+                    "url_pattern": "/foo.json",
+                    "group": "data"
+                },
+                {
+                    "host": ["http://fakeapi:9876"],
+                    "url_pattern": "/bar.json",
+                    "group": "data"
+                },
+                {
+                    "host": ["http://fakeapi:9876"],
+                    "url_pattern": "/stats"
+                }
+            ]
+        },
+        {
+            "endpoint": "/direct/drop",
+            "backend": [
+                {
+                    "host": ["http://fakeapi:9876"],
+                    "url_pattern": "/drop/"
+                },
+                {
+                    "host": ["http://fakeapi:9876"],
+                    "url_pattern": "/stats"
+                }
+            ]
+        },
+        {
+            "endpoint": "/direct/delayed",
+            "backend": [
+                {
+                    "host": ["http://fakeapi:9876"],
+                    "url_pattern": "/delayed/"
+                },
+                {
+                    "host": ["http://fakeapi:9876"],
+                    "url_pattern": "/file"
+                }
+            ]
+        }
+    ],
+    "extra_config": {
+        "telemetry/opentelemetry": {
+            "service_name": "krakend_frontend_service",
+            "metric_reporting_period": 1,
+            "trace_sample_rate": 1,
+            "layers": {
+                "global": {
+                    "disable_metrics": false,
+                    "disable_traces": false,
+                    "disable_propagation": false,
+                    "report_headers": true
+                },
+                "proxy": {
+                    "disable_metrics": false,
+                    "disable_traces": false,
+                    "report_headers": true
+                }, 
+                "backend": {
+                    "metrics": {
+                        "disable_stage": false,
+                        "round_trip": true,
+                        "read_payload": true,
+                        "detailed_connection": true,
+                        "static_attributes": [
+                            {
+                                "key": "my_metric_attr",
+                                "value": "my_metric_val"
+                            }
+                        ]
+                    },
+                    "traces": {
+                        "disable_stage": false,
+                        "round_trip": true,
+                        "read_payload": true,
+                        "detailed_connection": true,
+                        "static_attributes": [
+                            {
+                                "key": "my_trace_attr",
+                                "value": "my_trace_val" 
+                            }
+                        ],
+                        "report_headers": true
+                    }
+                }
+            },
+            "exporters": {
+                "prometheus": [
+                    {
+                        "name": "local_prometheus",
+                        "port": 9090,
+                        "process_metrics": true,
+                        "go_metrics": true
+                    }
+                ],
+                "otlp": [
+                    {
+                        "name": "local_tempo",
+                        "host": "tempo",
+                        "port": 4317,
+                        "use_http": false,
+                        "disable_metrics": true
+                    },
+                    { 
+                        "name": "local_jaeger",
+                        "host": "jaeger",
+                        "port": 4317,
+                        "use_http": false,
+                        "disable_metrics": true
+                    }
+                ]
+            }
+        }
+    }
+}
