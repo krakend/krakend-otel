@@ -238,3 +238,8 @@ Putting it all together, here we have an example of a configuration:
     }
 }
 ```
+
+# Other Info
+
+- Check the [example documentation](./example/README.md)
+- Some [notes about current implementation](./doc/implementation_details.md)

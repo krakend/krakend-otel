@@ -27,6 +27,39 @@ make conf
 make run
 ```
 
+# What do you get
+
+By running the example, you spawn 3 servers based on the Lura framework (we could
+say the example is a super simplified KrakenD CE).
+
+- `krakend_front`: the one to receive the requests
+- `krakend_middle`: a middle krakend to check how traces are propagated
+- `krakend_back`: a back krakend that makes request to `https://jsonplaceholder.typicode.com` to
+    get some dummy data.
+    
+The config files can be found in:
+
+- [./docker_compose/conf/krakend_*](./docker_compose/conf/) directories for the dockerized version of the example.
+- [./docker_compose/conf.local/krakend_*](./docker_compose/conf.local/) directories for running
+    the krakends in the local environment.
+
+
+# Execute some requests
+
+There is a bash script to make some requests, that you can run with:
+
+```bash
+bash ./make_request.sh
+```
+
+(You might want to edit the script to point to the dockerized version of the krakend frontend
+server or the local one).
+
 # Access the dashboards
 
+In both, the dockerized and the local options, you will end with some containers running some
+services that you can use to check the metrics / traces:
 
+- Grafana: at http://localhost:3000 , with the username: `krakend` and the password: `krakend` as
+    admin users
+- Jaeger: at http://localhost:16686.
