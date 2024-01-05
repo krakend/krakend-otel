@@ -60,7 +60,24 @@ func Register(ctx context.Context, srvCfg lconfig.ServiceConfig) error {
 		propagation.Baggage{},
 	)
 
-	s, err := state.NewWithVersion(*cfg, lcore.KrakendVersion, me, te)
+	if cfg.Instance == nil {
+		// if we do not have a selection of exporters to use, we default
+		// to report to all configured exporters.
+		cfg.Instance = &config.Instance{
+			MetricReportingPeriod: 30,
+			MetricProviders:       make([]string, 0, len(me)),
+			TraceSampleRate:       1.0,
+			TraceProviders:        make([]string, 0, len(te)),
+		}
+		for mk, _ := range me {
+			cfg.Instance.MetricProviders = append(cfg.Instance.MetricProviders, mk)
+		}
+		for tk, _ := range te {
+			cfg.Instance.TraceProviders = append(cfg.Instance.TraceProviders, tk)
+		}
+	}
+
+	s, err := state.NewWithVersion(cfg.ServiceName, *cfg.Instance, lcore.KrakendVersion, me, te)
 	if err != nil {
 		return err
 	}

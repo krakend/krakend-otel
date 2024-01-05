@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	// "time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
@@ -53,18 +52,14 @@ type OTELState struct {
 // globally set up exporters.
 func New(cfg config.Config) (*OTELState, error) {
 	m, t := exporter.GetGlobalExporterInstances()
-	return NewWithVersion(cfg, "undefined", m, t)
+	return NewWithVersion("KrakenD", *cfg.Instance, "undefined", m, t)
 }
 
 // NewWithVersion create a new OTELState with a version for
 // the KrakenD service, with the provided metrics and traces exporters
-func NewWithVersion(cfg config.Config, version string,
+func NewWithVersion(serviceName string, cfg config.Instance, version string,
 	me map[string]exporter.MetricReader, te map[string]exporter.SpanExporter) (*OTELState, error) {
 
-	serviceName := cfg.ServiceName
-	if serviceName == "" {
-		serviceName = "KrakenD"
-	}
 	res := sdkresource.NewWithAttributes(
 		semconv.SchemaURL,
 		semconv.ServiceName(serviceName),

@@ -110,15 +110,17 @@
                     }
                 }
             },
-            "metric_providers": [
-                "local_prometheus"
-            ],
-            "metric_reporting_period": 1,
-            "trace_providers": [
-                "local_tempo",
-                "local_jaeger"
-            ],
-            "trace_sample_rate": 1,
+            "instance": {
+                "metric_providers": [
+                    "local_prometheus"
+                ],
+                "metric_reporting_period": 1,
+                "trace_providers": [
+                    "local_tempo",
+                    "local_jaeger"
+                ],
+                "trace_sample_rate": 1
+            },
             "extra": {
                 "custom": "extra",
                 "future_expansion": true

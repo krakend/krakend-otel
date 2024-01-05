@@ -31,21 +31,8 @@ In the configuration we find the following root entries:
   observability system to a different one).
 - `layers`: in this section we can fine tune the amount of metrics / traces that 
   we want to report at each "stage" of the processing pipeline: `router`, `pipe` or `backend`.
-- `metric_providers`: this is the list of the exporter names that we want to use to 
-  report metrics. Provides an easy way to just select a few of the configured exporters
-  for metrics (the exporters might have support for metrics **and / or** traces, so
-  that should be taken into account because if we try to use an exporter that 
-  does not have support for metrics, it will fail).
-- `metric_reporting_period`: how often we want to flush the metrics in seconds.
-- `trace_providers`: the list of the exporter names that we want to use to
-  report traces. Provides an easy way to just select a few of the configured exporters
-  for traces (the exporters might have support for metrics **and / or** traces, so
-  that should be taken into account because if we try to use an exporter that 
-  does not have support for traces, it will fail).
-- `trace_sample_rate`: a number between `0` and `1.0` to define the sample rate for 
-  traces: if we set it for example to `0.25` only one in four requests will be 
-  reporting traces (usefull to reduce the amount of data generated while keeping
-  some traces to identify / debug issues).
+- `instance`: in this section we select which exporters we want to use for metrics, and
+  traces, and the params to tweak the telemetry instance that will be used.
 - `extra`: we leave this entry for any other "custom configuration" that a user of this 
   library might want to add.
 
@@ -53,6 +40,37 @@ In a visual way, this is the realation between the `exporters` configuration, an
 how we select as `metric_providers` or `trace_providers`: 
 
 ![krakend_otel_exporters.svg](./doc/krakend_otel_exporters.svg)
+
+### Exporters 
+
+Example:
+
+```json
+"exporters": {
+    "local_prometheus": {
+        "kind": "prometheus",
+        "config": {
+            "port": 9092,
+            "process_metrics": true,
+            "go_metrics": true
+        }
+    },
+    "local_tempo": {
+        "kind": "opentelemetry",
+        "config": {
+            "port": 4317,
+            "use_http": false
+        }
+    },
+    "local_jaeger": {
+        "kind": "opentelemetry",
+        "config": {
+            "port": 5317,
+            "use_http": false
+        }
+    }
+}
+```
 
 ### Layers
 
@@ -159,6 +177,46 @@ For both, the `metrics` and `traces` part, we can select the same options:
 }
 ```
 
+### Instance 
+
+Given that any Exporter could implement both traces and metrics, we might want
+to select to use it only for one of those roles: that's why we have this section
+to specify what to use. Also, it allows to easily enable / disable exporters
+without needing to delete the exporters configuration.
+
+The fields of the `instance` section are:
+
+- `metric_providers`: this is the list of the exporter names that we want to use to 
+  report metrics. Provides an easy way to just select a few of the configured exporters
+  for metrics (the exporters might have support for metrics **and / or** traces, so
+  that should be taken into account because if we try to use an exporter that 
+  does not have support for metrics, it will fail).
+- `metric_reporting_period`: how often we want to flush the metrics in seconds.
+- `trace_providers`: the list of the exporter names that we want to use to
+  report traces. Provides an easy way to just select a few of the configured exporters
+  for traces (the exporters might have support for metrics **and / or** traces, so
+  that should be taken into account because if we try to use an exporter that 
+  does not have support for traces, it will fail).
+- `trace_sample_rate`: a number between `0` and `1.0` to define the sample rate for 
+  traces: if we set it for example to `0.25` only one in four requests will be 
+  reporting traces (usefull to reduce the amount of data generated while keeping
+  some traces to identify / debug issues).
+
+Example:
+
+```json
+"instance": {
+    "metric_providers": [
+        "local_prometheus"
+    ],
+    "metric_reporting_period": 1,
+    "trace_providers": [
+        "local_tempo",
+        "local_jaeger"
+    ],
+    "trace_sample_rate": 1
+}
+```
 
 ### Example configuration:
 
@@ -223,15 +281,17 @@ Putting it all together, here we have an example of a configuration:
             "skip_paths": [""]
         }
     },
-    "metric_providers": [
-        "local_prometheus"
-    ],
-    "metric_reporting_period": 1,
-    "trace_providers": [
-        "local_tempo",
-        "local_jaeger"
-    ],
-    "trace_sample_rate": 1,
+    "instance": {
+        "metric_providers": [
+            "local_prometheus"
+        ],
+        "metric_reporting_period": 1,
+        "trace_providers": [
+            "local_tempo",
+            "local_jaeger"
+        ],
+        "trace_sample_rate": 1
+    },
     "extra": {
         "custom": "extra",
         "future_expansion": true

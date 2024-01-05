@@ -5,14 +5,11 @@ package config
 
 // Config is the root configuration for the OTEL observability stack
 type Config struct {
-	ServiceName           string                 `json:"service_name"`
-	Layers                *LayersOpts            `json:"layers"`
-	Exporters             map[string]Exporter    `json:"exporters"`
-	MetricProviders       []string               `json:"metric_providers"`
-	MetricReportingPeriod int                    `json:"metric_reporting_period"`
-	TraceProviders        []string               `json:"trace_providers"`
-	TraceSampleRate       float64                `json:"trace_sample_rate"`
-	Extra                 map[string]interface{} `json:"extra"`
+	ServiceName string                 `json:"service_name"`
+	Layers      *LayersOpts            `json:"layers"`
+	Exporters   map[string]Exporter    `json:"exporters"`
+	Instance    *Instance              `json:"instance"`
+	Extra       map[string]interface{} `json:"extra"`
 }
 
 // Exporter has the inforamtion to configure an exporter
@@ -25,6 +22,16 @@ type Config struct {
 type Exporter struct {
 	Kind   string                 `json:"kind"`
 	Config map[string]interface{} `json:"config"`
+}
+
+// Instance represents the set of selected exporters
+// for metrics and traces with the reprorting period
+// and sameple rate.
+type Instance struct {
+	MetricProviders       []string `json:"metric_providers"`
+	MetricReportingPeriod int      `json:"metric_reporting_period"`
+	TraceProviders        []string `json:"trace_providers"`
+	TraceSampleRate       float64  `json:"trace_sample_rate"`
 }
 
 // LayersOpts contains the level of telemetry detail
