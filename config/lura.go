@@ -38,33 +38,52 @@ func FromLura(srvCfg config.ServiceConfig) (*Config, error) {
 	}
 
 	if cfg.Layers == nil {
-		cfg.Layers = &LayersOpts{
-			Router: &RouterOpts{
-				Metrics:            true,
-				Traces:             true,
-				DisablePropagation: false,
-			},
-			Pipe: &PipeOpts{
-				Metrics: true,
-				Traces:  true,
-			},
-			Backend: &BackendOpts{
-				Metrics: &BackendMetricOpts{
-					Stage:              true,
-					RoundTrip:          true,
-					ReadPayload:        true,
-					DetailedConnection: true,
-				},
-				Traces: &BackendTraceOpts{
-					Stage:              true,
-					RoundTrip:          true,
-					ReadPayload:        true,
-					DetailedConnection: true,
-				},
-			},
+		cfg.Layers = &LayersOpts{}
+	}
+
+	if cfg.Layers.Router == nil {
+		cfg.Layers.Router = &RouterOpts{
+			DisableMetrics:     false,
+			DisableTraces:      false,
+			DisablePropagation: false,
 		}
 	}
 
-	cfg.ServiceName = srvCfg.Name
+	if cfg.Layers.Pipe == nil {
+		cfg.Layers.Pipe = &PipeOpts{
+			DisableMetrics: false,
+			DisableTraces:  false,
+		}
+	}
+
+	if cfg.Layers.Backend == nil {
+		cfg.Layers.Backend = &BackendOpts{}
+	}
+
+	if cfg.Layers.Backend.Metrics == nil {
+		cfg.Layers.Backend.Metrics = &BackendMetricOpts{
+			DisableStage:       false,
+			RoundTrip:          true,
+			ReadPayload:        true,
+			DetailedConnection: true,
+		}
+	}
+
+	if cfg.Layers.Backend.Traces == nil {
+		cfg.Layers.Backend.Traces = &BackendTraceOpts{
+			DisableStage:       false,
+			RoundTrip:          true,
+			ReadPayload:        true,
+			DetailedConnection: true,
+		}
+	}
+
+	if cfg.ServiceName == "" {
+		if srvCfg.Name != "" {
+			cfg.ServiceName = srvCfg.Name
+		} else {
+			cfg.ServiceName = "KrakenD"
+		}
+	}
 	return cfg, nil
 }

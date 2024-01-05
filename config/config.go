@@ -37,20 +37,19 @@ type LayersOpts struct {
 
 // RouterOpts has the options for the KrakenD
 // router stage.
-// We can select if we want to enable the metrics,
-// the traces, and also if we want to disable the
-// trace propagation.
+// We can select if we want to disable the metrics,
+// the traces, and / or the trace propagation.
 type RouterOpts struct {
-	Metrics            bool `json:"metrics"`
-	Traces             bool `json:"traces"`
+	DisableMetrics     bool `json:"disable_metrics"`
+	DisableTraces      bool `json:"disable_traces"`
 	DisablePropagation bool `json:"disable_propagation"`
 }
 
 // PipeOpts has the options for the KrakenD pipe stage
-// to enable metrics and traces.
+// to disable metrics and traces.
 type PipeOpts struct {
-	Metrics bool `json:"metrics"`
-	Traces  bool `json:"traces"`
+	DisableMetrics bool `json:"disable_metrics"`
+	DisableTraces  bool `json:"disable_traces"`
 }
 
 // Enabled returns if either metrics or traces are enabled
@@ -59,9 +58,11 @@ func (o *PipeOpts) Enabled() bool {
 	if o == nil {
 		return false
 	}
-	return o.Metrics || o.Traces
+	return !o.DisableMetrics || !o.DisableTraces
 }
 
+// BackendOpts defines the instrumentation detail level for
+// backend requests.
 // SkipInstrumentationPaths allows us to provide a list of path
 // that we do not want to have instrumentation for: those could
 // be the __debug , __health, or __echo endpoint, for example.
@@ -83,9 +84,9 @@ func (o *BackendOpts) Enabled() bool {
 // BackendMetricsOpts provides the options for the metrics
 // to be reported at the backend level.
 //
-// Stage option means it will measure the time it takes to complete
-// the full backend part (request + manipulations at the backend
-// level)
+// DisableStage option means it will perevent to report metrics
+// for ALLL the full backend part (request + manipulations at the backend
+// level), so other fields will have no effect.
 //
 // RoundTrip options will report metrics on the actual request
 // made for this backend: latency, body size, response code...
@@ -95,7 +96,7 @@ func (o *BackendOpts) Enabled() bool {
 // all the body has been read). This last options gives extra
 // fined grained times, that might not be always useful.
 type BackendMetricOpts struct {
-	Stage              bool              `json:"stage"`
+	DisableStage       bool              `json:"disable_stage"`
 	RoundTrip          bool              `json:"round_trip"`
 	ReadPayload        bool              `json:"read_payload"`
 	DetailedConnection bool              `json:"detailed_connection"`
@@ -107,15 +108,15 @@ func (o *BackendMetricOpts) Enabled() bool {
 	if o == nil {
 		return false
 	}
-	return o.Stage || o.RoundTrip || o.ReadPayload
+	return !o.DisableStage || o.RoundTrip || o.ReadPayload || o.DetailedConnection
 }
 
 // BackendTraceOpts provides the options for the tracing
 // to be reported at the backend level.
 //
-// Stage means it will create an span for
+// DisableStage means it will avoid creating a Span for ALL
 // the full backend part (request + manipulations at the backend
-// level)
+// level), so other fields will have no effect.
 //
 // RoundTrip options will create an span for the actual request
 // made for this backend.
@@ -123,7 +124,7 @@ func (o *BackendMetricOpts) Enabled() bool {
 // ReadPayload will create an additional span just for the reading
 // the response body part.
 type BackendTraceOpts struct {
-	Stage              bool              `json:"stage"`
+	DisableStage       bool              `json:"disable_stage"`
 	RoundTrip          bool              `json:"round_trip"`
 	ReadPayload        bool              `json:"read_payload"`
 	DetailedConnection bool              `json:"detailed_connection"`
@@ -135,5 +136,5 @@ func (o *BackendTraceOpts) Enabled() bool {
 	if o == nil {
 		return false
 	}
-	return o.Stage || o.RoundTrip || o.ReadPayload
+	return !o.DisableStage || o.RoundTrip || o.ReadPayload || o.DetailedConnection
 }

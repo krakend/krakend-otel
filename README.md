@@ -14,7 +14,7 @@ For a quick look at the observability the library can provide, check the
 
 In order to configure the open telemetry stack to instrument the API Gateway, a 
 new entry must be added to the `ExtraConfig` root propertry of `ServiceConfig` 
-using the `telemetry/opentelemery` key, with the `krakend-otel`'s configuration.
+using the `telemetry/opentelemetry` key, with the `krakend-otel`'s configuration.
 
 ## `krakend-otel` Configuration
 
@@ -78,15 +78,15 @@ that we want to report.
 
 At the router level we have 3 main options:
 
-- `metrics`: boolean to enable / disable if we want to report metrics for this layer
-- `traces`: boolean to enable / disable if we want to report traces for this layer
+- `disable_metrics`: boolean to enable / disable if we want to report metrics for this layer
+- `disable_traces`: boolean to enable / disable if we want to report traces for this layer
 - `disable_propagation`: boolena to disable the consumption of a propagation header for
     traces (so spans from a previous layer are linked to the KrakenD trace).
 
 ```json
 "router": {
-    "metrics": true,
-    "traces": true,
+    "disable_metrics": false,
+    "disable_traces": false,
     "disable_propagation": false
 }
 ```
@@ -100,8 +100,8 @@ At the pipe level we only have 2 options:
 
 ```json
 "pipe": {
-    "metrics": true,
-    "traces": true
+    "disable_metrics": false,
+    "disable_traces": true
 }
 ```
 
@@ -125,7 +125,7 @@ There are three entries:
   
 For both, the `metrics` and `traces` part, we can select the same options:
 
-- `stage`: to enable metrics / traces for the full backend processing part
+- `disable_stage`: to enable metrics / traces for the full backend processing part
 - `round_trip`: to enable metrics /traces for the actual http request for the backend
   (not taking into account the manipulation part at the backend level).
 - `read_payload`: to enable metrics / traces only for the response reading payload
@@ -138,7 +138,7 @@ For both, the `metrics` and `traces` part, we can select the same options:
 ```json
 "backend": {
     "metrics": {
-        "stage": true,
+        "disable_stage": false,
         "round_trip": true,
         "read_payload": true,
         "detailed_connection": true,
@@ -147,7 +147,7 @@ For both, the `metrics` and `traces` part, we can select the same options:
         }
     },
     "traces": {
-        "stage": true,
+        "disable_stage": false,
         "round_trip": true,
         "read_payload": true,
         "detailed_connection": true,
@@ -193,17 +193,17 @@ Putting it all together, here we have an example of a configuration:
     },
     "layers": {
         "router": {
-            "metrics": true,
-            "traces": true,
+            "disable_metrics": false,
+            "disable_traces": false,
             "disable_propagation": false
         },
         "pipe": {
-            "metrics": true,
-            "traces": true
+            "disable_metrics": false,
+            "disable_traces": false
         }, 
         "backend": {
             "metrics": {
-                "stage": true,
+                "disable_stage": false,
                 "round_trip": true,
                 "read_payload": true,
                 "detailed_connection": true,
@@ -212,7 +212,7 @@ Putting it all together, here we have an example of a configuration:
                 }
             },
             "traces": {
-                "stage": true,
+                "disable_stage": false,
                 "round_trip": true,
                 "read_payload": true,
                 "detailed_connection": true,

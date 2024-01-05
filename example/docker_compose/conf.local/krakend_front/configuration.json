@@ -34,17 +34,17 @@
             "service_name": "krakend_frontend_service",
             "layers": {
                 "router": {
-                    "metrics": true,
-                    "traces": true,
+                    "disable_metrics": false,
+                    "disable_traces": false,
                     "disable_propagation": false
                 },
                 "pipe": {
-                    "metrics": true,
-                    "traces": true
+                    "disable_metrics": false,
+                    "disable_traces": false
                 }, 
                 "backend": {
                     "metrics": {
-                        "stage": true,
+                        "disable_stage": false,
                         "round_trip": true,
                         "read_payload": true,
                         "detailed_connection": true,
@@ -53,7 +53,7 @@
                         }
                     },
                     "traces": {
-                        "stage": true,
+                        "disable_stage": false,
                         "round_trip": true,
                         "read_payload": true,
                         "detailed_connection": true,

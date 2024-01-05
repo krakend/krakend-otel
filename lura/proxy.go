@@ -111,8 +111,8 @@ func ProxyFactory(pf proxy.Factory, gsfn state.GetterFn, opts *kotelconfig.PipeO
 		gsfn = state.GlobalState
 	}
 
-	metricsEnabled := opts.Metrics
-	tracesEnabled := opts.Traces
+	metricsEnabled := !opts.DisableMetrics
+	tracesEnabled := !opts.DisableTraces
 
 	if !metricsEnabled && !tracesEnabled {
 		return pf.New
@@ -136,11 +136,11 @@ func ProxyFactory(pf proxy.Factory, gsfn state.GetterFn, opts *kotelconfig.PipeO
 // BackendFactory returns a backend factory that wraps the provided backend factory with the
 // instrumentation [Middleware] based on the configuration options.
 func BackendFactory(bf proxy.BackendFactory, gsfn state.GetterFn, opts *kotelconfig.BackendOpts) proxy.BackendFactory {
-	if opts == nil || (opts.Metrics.Stage == false && opts.Traces.Stage == false) {
+	if opts == nil || (opts.Metrics.DisableStage && opts.Traces.DisableStage) {
 		return bf
 	}
-	metricsEnabled := opts.Metrics.Stage
-	tracesEnabled := opts.Traces.Stage
+	metricsEnabled := !opts.Metrics.DisableStage
+	tracesEnabled := !opts.Traces.DisableStage
 
 	return func(cfg *config.Backend) proxy.Proxy {
 		next := bf(cfg)

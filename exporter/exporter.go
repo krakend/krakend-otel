@@ -90,7 +90,7 @@ func Instances(cfg *config.Config) (map[string]MetricReader, map[string]SpanExpo
 		}
 		if ss, ok := i.(SpanExporter); ok && ss != nil {
 			s[name] = ss
-		} else if mm, ok := i.(MetricReader); ok {
+		} else if mm, ok := i.(MetricReader); ok && mm != nil {
 			m[name] = mm
 		} else {
 			errList = append(errList, fmt.Errorf("Kind %s is not a exporter", ecfg.Kind))

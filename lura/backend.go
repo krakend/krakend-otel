@@ -110,7 +110,7 @@ func HTTPRequestExecutorFromConfig(clientFactory transport.HTTPClientFactory,
 		TracesOpts: clienthttp.TransportTracesOptions{
 			RoundTrip:          opts.Traces.RoundTrip,
 			ReadPayload:        opts.Traces.ReadPayload,
-			DetailedConnection: opts.Metrics.DetailedConnection,
+			DetailedConnection: opts.Traces.DetailedConnection,
 			FixedAttributes:    attrs,
 		},
 	}
