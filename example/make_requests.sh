@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # for i in {1..10}
-for i in {1..20}
+for i in {1..2}
 do
-    curl localhost:54444/fake/fsf
-    curl localhost:54444/combination/2
+#    curl localhost:54444/fake/fsf
+#    curl localhost:54444/combination/2
     curl localhost:54444/combination/1
 done
 

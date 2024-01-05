@@ -20,6 +20,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -78,6 +79,7 @@ func main() {
 	logger, _ := logging.NewLogger(*logLevel, os.Stdout, "[KRAKEND]")
 
 	obsConfig, err := kotelconfig.FromLura(serviceConfig)
+
 	if err != nil {
 		fmt.Printf("ERROR: no config found for open telemetry: %s\n", err.Error())
 		return

@@ -48,12 +48,14 @@ func InstrumentedHTTPClient(c *http.Client, t *TransportOptions, clientName stri
 	// TODO: we might want to return an error if no transport options are provided ?
 	opts := TransportOptions{
 		MetricsOpts: TransportMetricsOptions{
-			RoundTrip:   true,
-			ReadPayload: true,
+			RoundTrip:          true,
+			ReadPayload:        true,
+			DetailedConnection: false,
 		},
 		TracesOpts: TransportTracesOptions{
-			RoundTrip:   true,
-			ReadPayload: true,
+			RoundTrip:          true,
+			ReadPayload:        true,
+			DetailedConnection: false,
 		},
 		OTELInstance: state.GlobalState,
 	}

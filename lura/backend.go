@@ -23,12 +23,14 @@ var (
 	}
 	defaultOpts = otelconfig.BackendOpts{
 		Metrics: &otelconfig.BackendMetricOpts{
+			DisableStage:       false,
 			RoundTrip:          true,
 			ReadPayload:        true,
 			DetailedConnection: true,
 			StaticAttributes:   make(map[string]string),
 		},
 		Traces: &otelconfig.BackendTraceOpts{
+			DisableStage:       false,
 			RoundTrip:          true,
 			ReadPayload:        true,
 			DetailedConnection: true,

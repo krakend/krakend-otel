@@ -43,7 +43,7 @@ func New(hf krakendgin.HandlerFactory, gsfn state.GetterFn, opts *kconfig.Router
 // HandlerFunc creates and instrumented gin.Handler wrapper with traces and / or metrics enabled
 // according to the [config.RouterOpts].
 func HandlerFunc(cfg *config.EndpointConfig, opts *kconfig.RouterOpts, gsfn state.GetterFn, next gin.HandlerFunc) gin.HandlerFunc {
-	if opts == nil || (!opts.DisableMetrics && !opts.DisableTraces) {
+	if opts == nil || (opts.DisableMetrics && opts.DisableTraces) {
 		return next
 	}
 	s := gsfn()

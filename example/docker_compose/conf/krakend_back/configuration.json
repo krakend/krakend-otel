@@ -52,7 +52,7 @@
     ],
     "extra_config": {
         "telemetry/opentelemetry": {
-            "service_name": "krakend_frontend_service",
+            "service_name": "krakend_backend_service",
             "layers": {
                 "router": {
                     "disable_metrics": false,
