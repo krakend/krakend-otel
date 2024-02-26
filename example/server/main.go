@@ -82,7 +82,7 @@ func main() {
 		return
 	}
 
-	shutdownFn, err := kotel.Register(ctx, serviceConfig)
+	shutdownFn, err := kotel.Register(ctx, logger, serviceConfig)
 	if err != nil {
 		fmt.Printf("--- failed to register: %s\n", err.Error())
 		return

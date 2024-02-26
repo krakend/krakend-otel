@@ -20,6 +20,7 @@ import (
 
 	lconfig "github.com/luraproject/lura/v2/config"
 	lcore "github.com/luraproject/lura/v2/core"
+	"github.com/luraproject/lura/v2/logging"
 
 	"github.com/krakend/krakend-otel/config"
 	"github.com/krakend/krakend-otel/exporter"
@@ -29,21 +30,22 @@ import (
 // Register uses the ServiceConfig to instantiate the configured exporters.
 // It also sets the global exporter instances, the global propagation method, and
 // the global KrakenD otel state, so it can be used from anywhere.
-func Register(ctx context.Context, srvCfg lconfig.ServiceConfig) (func(), error) {
+func Register(ctx context.Context, l logging.Logger, srvCfg lconfig.ServiceConfig) (func(), error) {
 	cfg, err := config.FromLura(srvCfg)
 	if err != nil {
 		if errors.Is(err, config.ErrNoConfig) {
 			return func() {}, nil
 		}
+		// we do not log, we left it to the parent:
 		return func() {}, err
 	}
-	return RegisterWithConfig(ctx, cfg)
+	return RegisterWithConfig(ctx, l, cfg)
 }
 
 // RegisterWithConfig instantiates the configured exporters from an already
 // parsed config: sets the global exporter instances, the global propagation method, and
 // the global KrakenD otel state, so it can be used from anywhere.
-func RegisterWithConfig(ctx context.Context, cfg *config.Config) (func(), error) {
+func RegisterWithConfig(ctx context.Context, l logging.Logger, cfg *config.Config) (func(), error) {
 	shutdownFn := func() {}
 	if err := cfg.Validate(); err != nil {
 		return shutdownFn, err
@@ -55,11 +57,11 @@ func RegisterWithConfig(ctx context.Context, cfg *config.Config) (func(), error)
 		return shutdownFn, err
 	}
 	exporter.SetGlobalExporterInstances(me, te)
-	return RegisterGlobalInstance(ctx, me, te, *cfg.MetricReportingPeriod, *cfg.TraceSampleRate, cfg.ServiceName)
+	return RegisterGlobalInstance(ctx, l, me, te, *cfg.MetricReportingPeriod, *cfg.TraceSampleRate, cfg.ServiceName)
 }
 
 // RegisterGlobalInstance creates the instance that will be used to report metrics and traces
-func RegisterGlobalInstance(ctx context.Context, me map[string]exporter.MetricReader, te map[string]exporter.SpanExporter,
+func RegisterGlobalInstance(ctx context.Context, l logging.Logger, me map[string]exporter.MetricReader, te map[string]exporter.SpanExporter,
 	metricReportingPeriod int, traceSampleRate float64, serviceName string,
 ) (func(), error) {
 	shutdownFn := func() {}
@@ -68,6 +70,12 @@ func RegisterGlobalInstance(ctx context.Context, me map[string]exporter.MetricRe
 		propagation.Baggage{},
 	)
 	otel.SetTextMapPropagator(prop)
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(e error) {
+		// TODO: we might want to "throtle" the error reporting
+		// when we have repeated messagese when a OTLP backend is
+		// down.
+		l.Error("[SERVICE OpenTelemetry] " + e.Error())
+	}))
 
 	globalStateCfg := &state.OTELStateConfig{
 		MetricReportingPeriod: metricReportingPeriod,
