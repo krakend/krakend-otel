@@ -60,6 +60,13 @@ func (t *tracesHTTP) end(tr *tracking) {
 		return
 	}
 
+	if tr.isHijacked {
+		tr.span.SetAttributes(attribute.Bool("http.connection.hijacked", true))
+		if tr.hijackedErr != nil {
+			tr.span.SetAttributes(attribute.String("http.connection.error", tr.hijackedErr.Error()))
+		}
+	}
+
 	tr.span.SetAttributes(
 		semconv.HTTPRoute(tr.EndpointPattern()),
 		semconv.HTTPResponseStatusCode(tr.responseStatus),

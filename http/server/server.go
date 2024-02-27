@@ -34,7 +34,11 @@ func (h *trackingHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(t.ctx)
 
 	if h.metrics != nil || h.traces != nil {
-		rw = newTrackingResponseWriter(rw, t, h.reportHeaders)
+		rw = newTrackingResponseWriter(rw, t, h.reportHeaders, func() {
+			t.Finish()
+			h.traces.end(t)
+			h.metrics.report(t, r)
+		})
 	}
 
 	t.Start()

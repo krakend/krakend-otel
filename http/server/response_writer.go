@@ -8,11 +8,12 @@ import (
 )
 
 type TrackingResponseWriter struct {
-	track         *tracking
-	recordHeaders bool
-	rw            http.ResponseWriter
-	flusher       http.Flusher
-	hijacker      http.Hijacker
+	track          *tracking
+	recordHeaders  bool
+	rw             http.ResponseWriter
+	flusher        http.Flusher
+	hijacker       http.Hijacker
+	hijackCallback func()
 }
 
 func (w *TrackingResponseWriter) gatherHeaders() {
@@ -51,10 +52,18 @@ func (w *TrackingResponseWriter) WriteHeader(statusCode int) {
 }
 
 func (w *TrackingResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	var c net.Conn
+	var rw *bufio.ReadWriter
 	if w.hijacker != nil {
-		return w.hijacker.Hijack()
+		c, rw, w.track.hijackedErr = w.hijacker.Hijack()
+	} else {
+		w.track.hijackedErr = fmt.Errorf("not implements Hijacker interface")
 	}
-	return nil, nil, fmt.Errorf("not implemented")
+	w.track.isHijacked = true
+	if w.hijackCallback != nil {
+		w.hijackCallback()
+	}
+	return c, rw, w.track.hijackedErr
 }
 
 func (w *TrackingResponseWriter) Flush() {
@@ -63,12 +72,14 @@ func (w *TrackingResponseWriter) Flush() {
 	}
 }
 
-func newTrackingResponseWriter(rw http.ResponseWriter, t *tracking, recordHeaders bool) *TrackingResponseWriter {
+func newTrackingResponseWriter(rw http.ResponseWriter, t *tracking, recordHeaders bool,
+	hijackCallback func()) *TrackingResponseWriter {
 	return &TrackingResponseWriter{
-		track:         t,
-		recordHeaders: recordHeaders,
-		rw:            rw,
-		flusher:       rw.(http.Flusher),
-		hijacker:      rw.(http.Hijacker),
+		track:          t,
+		recordHeaders:  recordHeaders,
+		rw:             rw,
+		flusher:        rw.(http.Flusher),
+		hijacker:       rw.(http.Hijacker),
+		hijackCallback: hijackCallback,
 	}
 }

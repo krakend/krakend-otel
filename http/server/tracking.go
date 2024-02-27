@@ -27,10 +27,15 @@ type tracking struct {
 	responseHeaders map[string][]string
 	writeErrs       []error
 	endpointPattern string
+	isHijacked      bool
+	hijackedErr     error
 }
 
 func (t *tracking) EndpointPattern() string {
 	if len(t.endpointPattern) == 0 {
+		if t.isHijacked {
+			return "Upgraded Connection"
+		}
 		return "404 Not Found"
 	}
 	return t.endpointPattern
