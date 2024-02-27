@@ -73,7 +73,8 @@ func (w *TrackingResponseWriter) Flush() {
 }
 
 func newTrackingResponseWriter(rw http.ResponseWriter, t *tracking, recordHeaders bool,
-	hijackCallback func()) *TrackingResponseWriter {
+	hijackCallback func(),
+) *TrackingResponseWriter {
 	return &TrackingResponseWriter{
 		track:          t,
 		recordHeaders:  recordHeaders,
