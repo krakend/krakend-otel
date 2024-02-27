@@ -36,8 +36,6 @@ func (w *TrackingResponseWriter) Header() http.Header {
 
 func (w *TrackingResponseWriter) Write(b []byte) (int, error) {
 	w.gatherHeaders()
-	if w.recordHeaders && w.track.responseHeaders == nil {
-	}
 	nBytes, e := w.rw.Write(b)
 	if e != nil {
 		w.track.writeErrs = append(w.track.writeErrs, e)
