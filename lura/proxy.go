@@ -128,7 +128,7 @@ func Middleware(gsf state.GetterFn, metricsEnabled bool, tracesEnabled bool,
 	}
 }
 
-// ProxyFactory returns a pipe stage factory that wraps the provided proxy factory with the
+// ProxyFactory returns a proxy stage factory that wraps the provided proxy factory with the
 // instrumentation [Middleware] based on the configuration options.
 func ProxyFactory(pf proxy.Factory, gsfn state.GetterFn, opts *kotelconfig.PipeOpts,
 	skipPaths []string,
