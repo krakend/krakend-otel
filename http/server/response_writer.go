@@ -13,7 +13,7 @@ type TrackingResponseWriter struct {
 	rw             http.ResponseWriter
 	flusher        http.Flusher
 	hijacker       http.Hijacker
-	hijackCallback func()
+	hijackCallback func(net.Conn, error) (net.Conn, error)
 }
 
 func (w *TrackingResponseWriter) gatherHeaders() {
@@ -61,7 +61,14 @@ func (w *TrackingResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	}
 	w.track.isHijacked = true
 	if w.hijackCallback != nil {
-		w.hijackCallback()
+		wrapConn, avoidHijackErr := w.hijackCallback(c, w.track.hijackedErr)
+		if avoidHijackErr != nil {
+			if w.track.hijackedErr == nil {
+				w.track.hijackedErr = avoidHijackErr
+			}
+		} else {
+			c = wrapConn
+		}
 	}
 	return c, rw, w.track.hijackedErr
 }
@@ -73,7 +80,7 @@ func (w *TrackingResponseWriter) Flush() {
 }
 
 func newTrackingResponseWriter(rw http.ResponseWriter, t *tracking, recordHeaders bool,
-	hijackCallback func(),
+	hijackCallback func(net.Conn, error) (net.Conn, error),
 ) *TrackingResponseWriter {
 	return &TrackingResponseWriter{
 		track:          t,

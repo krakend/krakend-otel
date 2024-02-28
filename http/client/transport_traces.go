@@ -100,12 +100,12 @@ func (t *transportTraces) end(rtt *roundTripTracking) {
 			}
 		}
 		rtt.span.SetAttributes(respAttrs...)
-		rtt.span.SetAttributes(attribute.Float64("response-latency", rtt.latencyInSecs))
+		rtt.span.SetAttributes(attribute.Float64("response-duration", rtt.latencyInSecs))
 		if t.detailedConnection {
 			rtt.span.SetAttributes(
-				attribute.Float64("get-conn-latency", rtt.getConnLatency),
-				attribute.Float64("dns-latency", rtt.dnsLatency),
-				attribute.Float64("tls-latency", rtt.tlsLatency),
+				attribute.Float64("get-conn-duration", rtt.getConnLatency),
+				attribute.Float64("dns-duration", rtt.dnsLatency),
+				attribute.Float64("tls-duration", rtt.tlsLatency),
 			)
 			rtt.span.AddEvent("first-byte-time", trace.WithTimestamp(rtt.firstByteTime))
 		}

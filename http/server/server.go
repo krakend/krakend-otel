@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"net"
 	"net/http"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -34,10 +35,11 @@ func (h *trackingHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(t.ctx)
 
 	if h.metrics != nil || h.traces != nil {
-		rw = newTrackingResponseWriter(rw, t, h.reportHeaders, func() {
+		rw = newTrackingResponseWriter(rw, t, h.reportHeaders, func(c net.Conn, err error) (net.Conn, error) {
 			t.Finish()
 			h.traces.end(t)
 			h.metrics.report(t, r)
+			return c, nil
 		})
 	}
 

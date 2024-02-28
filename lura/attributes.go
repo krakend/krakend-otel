@@ -26,8 +26,8 @@ func backendConfigAttributes(cfg *config.Backend) []attribute.KeyValue {
 	attrs := []attribute.KeyValue{
 		semconv.HTTPRequestMethodKey.String(cfg.Method),
 		semconv.HTTPRoute(urlPattern), // <- for traces we can use URLFull to not have the matched path
-		attribute.String("krakend.endpoint", parentEndpoint),
-		attribute.String("krakend.endpoint_method", cfg.ParentEndpointMethod),
+		attribute.String("krakend.endpoint.route", parentEndpoint),
+		attribute.String("krakend.endpoint.method", cfg.ParentEndpointMethod),
 	}
 	numHosts := len(cfg.Host)
 	if numHosts > 0 {

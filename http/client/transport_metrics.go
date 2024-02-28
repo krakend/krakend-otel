@@ -71,7 +71,7 @@ func newTransportMetrics(metricsOpts *TransportMetricsOptions, meter metric.Mete
 
 	tm.responseLatency, _ = meter.Float64Histogram("http.client.duration", kotelconfig.TimeBucketsOpt)
 	tm.responseContentLength, _ = meter.Int64Histogram("http.client.response.size", kotelconfig.SizeBucketsOpt)
-	tm.responseNoContentLength, _ = meter.Int64Counter("http.client.response.no_content_length")
+	tm.responseNoContentLength, _ = meter.Int64Counter("http.client.response.no-content-length")
 
 	tm.detailsEnabled = metricsOpts.DetailedConnection
 	tm.getConnLatency, _ = meter.Float64Histogram("http.client.request.get-conn.duration", kotelconfig.TimeBucketsOpt)
