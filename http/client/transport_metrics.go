@@ -86,12 +86,14 @@ func (m *transportMetrics) report(rtt *roundTripTracking, attrs []attribute.KeyV
 		return
 	}
 
-	attrM := make([]attribute.KeyValue, len(attrs), len(attrs)+2)
+	attrM := make([]attribute.KeyValue, len(attrs), len(attrs)+4)
 	copy(attrM, attrs)
 	if len(m.clientName) > 0 {
 		attrM = append(attrM, attribute.Key("clientname").String(m.clientName))
 	}
 	attrM = append(attrM, semconv.HTTPRequestMethodKey.String(rtt.req.Method))
+	attrM = append(attrM, semconv.ServerAddress(rtt.req.RemoteAddr))
+
 	statusCode := 0
 	if rtt.err == nil {
 		// if we fail on the client side, we do not have a status code, but we
