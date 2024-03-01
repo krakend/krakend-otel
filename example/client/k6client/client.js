@@ -14,7 +14,7 @@ export const options = {
 // about authoring k6 scripts.
 //
 export default function() {
-    let address = 'http://192.168.1.12:54444';
+    let address = 'http://192.168.1.36:54444';
     // let address = 'http://192.168.1.12:44444';
     http.get(address + '/fake/fsf');
     http.get(address + '/combination/1');

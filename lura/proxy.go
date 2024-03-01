@@ -87,15 +87,12 @@ func Middleware(gsf state.GetterFn, metricsEnabled bool, tracesEnabled bool,
 ) proxy.Middleware {
 	mAttrs := make([]attribute.KeyValue, 0, len(staticAttrs)+1)
 	tAttrs := make([]attribute.KeyValue, 0, len(staticAttrs)+1)
-
-	mAttrs = append(mAttrs, semconv.HTTPRoute(urlPattern))
-	tAttrs = append(tAttrs, attribute.String("krakend.stage", stageName))
-
 	for _, sa := range staticAttrs {
 		mAttrs = append(mAttrs, sa)
 		tAttrs = append(tAttrs, sa)
 	}
 
+	tAttrs = append(tAttrs, attribute.String("krakend.stage", stageName))
 	metricAttrs := metric.WithAttributes(mAttrs...)
 
 	return func(next ...proxy.Proxy) proxy.Proxy {
@@ -114,7 +111,8 @@ func Middleware(gsf state.GetterFn, metricsEnabled bool, tracesEnabled bool,
 		if metricsEnabled {
 			meter := gs.Meter()
 			var err error
-			duration, err = meter.Float64Histogram("krakend."+stageName+".duration", kotelconfig.TimeBucketsOpt)
+			duration, err = meter.Float64Histogram("krakend."+stageName+".duration",
+				kotelconfig.TimeBucketsOpt)
 			if err != nil {
 				duration = nil
 			}
@@ -124,7 +122,8 @@ func Middleware(gsf state.GetterFn, metricsEnabled bool, tracesEnabled bool,
 		if tracesEnabled {
 			tracer = gs.Tracer()
 		}
-		return middlewareProxy(next[0], tracer, urlPattern, duration, tAttrs, metricAttrs, reportHeaders)
+		return middlewareProxy(next[0], tracer, urlPattern, duration,
+			tAttrs, metricAttrs, reportHeaders)
 	}
 }
 
@@ -160,7 +159,9 @@ func ProxyFactory(pf proxy.Factory, gsfn state.GetterFn, opts *kotelconfig.PipeO
 
 		urlPattern := kotelconfig.NormalizeURLPattern(cfg.Endpoint)
 		return Middleware(gsfn, metricsEnabled, tracesEnabled, "proxy", urlPattern,
-			[]attribute.KeyValue{}, opts.ReportHeaders)(next), nil
+			[]attribute.KeyValue{
+				semconv.HTTPRoute(urlPattern),
+			}, opts.ReportHeaders)(next), nil
 	}
 }
 

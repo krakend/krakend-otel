@@ -82,7 +82,8 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 	traceAttrs := make([]attribute.KeyValue, len(attrs),
 		len(attrs)+1+len(opts.Traces.StaticAttributes))
 	copy(traceAttrs, attrs)
-	traceAttrs = append(traceAttrs, attribute.String("krakend.stage", "backend-request"))
+	traceAttrs = append(traceAttrs,
+		attribute.String("krakend.stage", "backend-request"))
 	if len(opts.Traces.StaticAttributes) > 0 {
 		for _, kv := range opts.Traces.StaticAttributes {
 			if len(kv.Key) > 0 && len(kv.Value) > 0 {

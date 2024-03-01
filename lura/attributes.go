@@ -23,24 +23,29 @@ func backendConfigAttributes(cfg *config.Backend) []attribute.KeyValue {
 	urlPattern := kotelconfig.NormalizeURLPattern(cfg.URLPattern)
 	parentEndpoint := kotelconfig.NormalizeURLPattern(cfg.ParentEndpoint)
 
-	attrs := []attribute.KeyValue{
+	return []attribute.KeyValue{
 		semconv.HTTPRequestMethodKey.String(cfg.Method),
 		semconv.HTTPRoute(urlPattern), // <- for traces we can use URLFull to not have the matched path
 		attribute.String("krakend.endpoint.route", parentEndpoint),
 		attribute.String("krakend.endpoint.method", cfg.ParentEndpointMethod),
 	}
+}
+
+func backendConfigHostAttribute(cfg *config.Backend) []attribute.KeyValue {
 	numHosts := len(cfg.Host)
-	if numHosts > 0 {
-		if numHosts == 1 {
-			attrs = append(attrs, semconv.ServerAddress(cfg.Host[0]))
-		} else {
-			hosts := make([]string, 0, numHosts)
-			copy(hosts, cfg.Host)
-			sort.StringSlice(hosts).Sort()
-			strHosts := strings.Join(hosts, "_")
-			attrs = append(attrs, semconv.ServerAddress(strHosts))
+	if numHosts == 0 {
+		return []attribute.KeyValue{}
+	}
+	if numHosts == 1 {
+		return []attribute.KeyValue{
+			semconv.ServerAddress(cfg.Host[0]),
 		}
 	}
-
-	return attrs
+	hosts := make([]string, 0, numHosts)
+	copy(hosts, cfg.Host)
+	sort.StringSlice(hosts).Sort()
+	strHosts := strings.Join(hosts, "_")
+	return []attribute.KeyValue{
+		semconv.ServerAddress(strHosts),
+	}
 }
