@@ -29,10 +29,11 @@ const (
 // instruments for a state.
 type OTEL interface {
 	Tracer() trace.Tracer
-	// MeterProvider() metric.MeterProvider
 	Meter() metric.Meter
 	Propagator() propagation.TextMapPropagator
 	Shutdown(ctx context.Context)
+	MeterProvider() metric.MeterProvider
+	TracerProvider() trace.TracerProvider
 }
 
 // GetterFn defines a function that will return an [OTEL] instance.
