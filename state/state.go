@@ -132,6 +132,14 @@ func (s *OTELState) Meter() metric.Meter {
 	return s.meter
 }
 
+func (s *OTELState) MeterProvider() metric.MeterProvider {
+	return s.meterProvider
+}
+
+func (s *OTELState) TracerProvider() trace.TracerProvider {
+	return s.tracerProvider
+}
+
 // Propagator returns the configured propagator to use.
 func (s *OTELState) Propagator() propagation.TextMapPropagator {
 	if s == nil {

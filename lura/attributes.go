@@ -1,9 +1,6 @@
 package lura
 
 import (
-	"sort"
-	"strings"
-
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/semconv/v1.21.0"
 
@@ -28,24 +25,5 @@ func backendConfigAttributes(cfg *config.Backend) []attribute.KeyValue {
 		semconv.HTTPRoute(urlPattern), // <- for traces we can use URLFull to not have the matched path
 		attribute.String("krakend.endpoint.route", parentEndpoint),
 		attribute.String("krakend.endpoint.method", cfg.ParentEndpointMethod),
-	}
-}
-
-func backendConfigHostAttribute(cfg *config.Backend) []attribute.KeyValue {
-	numHosts := len(cfg.Host)
-	if numHosts == 0 {
-		return []attribute.KeyValue{}
-	}
-	if numHosts == 1 {
-		return []attribute.KeyValue{
-			semconv.ServerAddress(cfg.Host[0]),
-		}
-	}
-	hosts := make([]string, 0, numHosts)
-	copy(hosts, cfg.Host)
-	sort.StringSlice(hosts).Sort()
-	strHosts := strings.Join(hosts, "_")
-	return []attribute.KeyValue{
-		semconv.ServerAddress(strHosts),
 	}
 }
