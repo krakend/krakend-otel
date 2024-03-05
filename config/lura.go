@@ -80,7 +80,7 @@ func FromLura(srvCfg config.ServiceConfig) (*Config, error) {
 		// if there are no defined skip paths, we use the default ones:
 		// to avoid using defaultSkipPaths, provide a list with an empty string
 		cfg.SkipPaths = []string{
-			"/health",
+			"/__health",
 			"/__debug/",
 			"/__echo/",
 			"/__stats/",
