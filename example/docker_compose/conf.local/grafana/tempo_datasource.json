@@ -1,0 +1,17 @@
+  {
+    "id": 2,
+    "uid": "e7eea071-7df9-44ff-8a6a-155248d05f42",
+    "orgId": 1,
+    "name": "Tempo",
+    "type": "tempo",
+    "typeName": "Tempo",
+    "typeLogoUrl": "/public/app/plugins/datasource/tempo/img/tempo_logo.svg",
+    "access": "proxy",
+    "url": "http://tempo:3200",
+    "user": "",
+    "database": "",
+    "basicAuth": false,
+    "isDefault": false,
+    "jsonData": {},
+    "readOnly": false
+  }

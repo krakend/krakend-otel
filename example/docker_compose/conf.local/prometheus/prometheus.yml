@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+  external_labels:
+    monitor: kotel_monitor
+
+scrape_configs:
+  - job_name: kotel_example
+    scrape_interval: 5s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+        - '192.168.1.36:59091'
+        - '192.168.1.36:59092'
+        - '192.168.1.36:59093'
+        labels:
+          app: kotel_example

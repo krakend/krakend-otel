@@ -1,0 +1,5 @@
+{
+    "source": "bar.json",
+    "dummy_string": "something here",
+    "dummy_number": 42.0
+}

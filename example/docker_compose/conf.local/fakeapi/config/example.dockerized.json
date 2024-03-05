@@ -1,0 +1,173 @@
+{
+    "port": 9876,
+    "host": "0.0.0.0",
+    "endpoints": [
+        {
+            "method": "GET",
+            "path_pattern": "/",
+            "behaviour": [
+                {
+                    "name": "slower",
+                    "config": {
+                        "max_bytes_per_second": 20,
+                        "flush_bytes": 2
+                    }
+                },
+                {
+                    "name": "status_distributor",
+                    "config": {
+                        "code_distribution": [
+                            {"key": 200, "val": 0.5},
+                            {"key": 201, "val": 0.3}
+                        ],
+                        "seed": 1
+                    }
+                },
+                {
+                    "name": "delayer",
+                    "config": {
+                        "delay_millis_distribution": [
+                            {"key": 0, "val": 0.05},
+                            {"key": 10, "val": 0.2},
+                            {"key": 50, "val": 0.0},
+                            {"key": 100, "val": 0.75}
+                        ],
+                        "seed": 1
+                    }
+                }
+            ],
+            "content": {
+                "source": "directory",
+                "config": {
+                    "dir": "/etc/reqstatsrv/data"
+                }
+            }
+        },
+        {
+            "method": "GET",
+            "path_pattern": "/drop/",
+            "behaviour": [
+                {
+                    "name": "connection_closer",
+                    "config": {
+                        "freq": 0.5,
+                        "seed": 3
+                    }
+                }
+            ],
+            "content" : {
+                "source": "file",
+                "config": {
+                    "path": "/etc/reqstatsrv/data/bar.json"
+                }
+            }
+        },
+        {
+            "method": "GET",
+            "path_pattern": "/delayed/",
+            "behaviour": [
+                {
+                    "name": "delayer",
+                    "config": {
+                        "delay_millis_distribution": [
+                            {"key": 0, "val": 0.0},
+                            {"key": 10, "val": 0.0},
+                            {"key": 50, "val": 0.0},
+                            {"key": 100, "val": 0.25},
+                            {"key": 200, "val": 0.25},
+                            {"key": 700, "val": 0.5}
+                        ],
+                        "seed": 1
+                    }
+                },
+                {
+                    "name": "status_distributor",
+                    "config": {
+                        "code_distribution": [
+                            {"key": 200, "val": 0.7},
+                            {"key": 201, "val": 0.3}
+                        ],
+                        "seed": 1
+                    }
+                }
+            ],
+            "content": {
+                "source": "directory",
+                "config": {
+                    "dir": "/etc/reqstatsrv/data"
+                }
+            }
+        },
+        {
+            "method": "GET",
+            "path_pattern": "/file",
+            "behaviour": [],
+            "content": {
+                "source": "file",
+                "config": {
+                    "path": "/etc/reqstatsrv/data/bar.json" 
+                }
+            }
+        },
+        {
+            "method": "GET",
+            "path_pattern": "/stats",
+            "behaviour": [
+
+            ],
+            "content": {
+                "source": "stats",
+                "config": {}
+            }
+        },
+        {
+            "method": "GET",
+            "path_pattern": "/suslik",
+            "behaviour": [
+                {
+                    "name": "status_distributor",
+                    "config": {
+                        "code_distribution": [
+                            {"key": 200, "val": 0.6},
+                            {"key": 201, "val": 0.2},
+                            {"key": 202, "val": 0.2}
+                        ],
+                        "seed": 1
+                    }
+                }
+
+            ],
+            "content": {
+                "source": "status_content_selector",
+                "config": {
+                    "default_content": {
+                        "source": "stats",
+                        "config": {}
+                    },
+                    "status_contents": [
+                        {
+                            "from": 201,
+                            "to": 202,
+                            "content": {
+                                "source": "file",
+                                "config": {
+                                    "path": "/etc/reqstatsrv/data/201_created.json"
+                                }
+                            }
+                        },
+                        {
+                            "from": 202,
+                            "to": 203,
+                            "content": {
+                                "source": "file",
+                                "config": {
+                                    "path": "/etc/reqstatsrv/data/202_accepted.json"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}
