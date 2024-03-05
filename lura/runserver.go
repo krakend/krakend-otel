@@ -12,8 +12,9 @@ import (
 	luragin "github.com/luraproject/lura/v2/router/gin"
 )
 
-func GlobalRunServer(_ logging.Logger, srvCfg *luraconfig.ServiceConfig, stateFn state.GetterFn,
-	otelCfgParser kotelconfig.ConfigParserFn, next luragin.RunServerFunc) luragin.RunServerFunc {
+func GlobalRunServer(_ logging.Logger, srvCfg *luraconfig.ServiceConfig,
+	otelCfgParser kotelconfig.ConfigParserFn, stateFn state.GetterFn,
+	next luragin.RunServerFunc) luragin.RunServerFunc {
 
 	otelCfg, err := otelCfgParser(*srvCfg)
 	if otelCfg == nil {

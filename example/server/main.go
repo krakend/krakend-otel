@@ -104,8 +104,8 @@ func main() {
 	handlerF := otelgin.New(krakendgin.EndpointHandler, &serviceConfig, kotelconfig.FromLura)
 
 	runserverChain := krakendgin.RunServerFunc(
-		otellura.GlobalRunServer(logger, &serviceConfig, otelStateFn,
-			kotelconfig.FromLura, server.RunServer))
+		otellura.GlobalRunServer(logger, &serviceConfig, kotelconfig.FromLura,
+			otelStateFn, server.RunServer))
 
 	engine := gin.Default()
 	engine.RedirectTrailingSlash = true
