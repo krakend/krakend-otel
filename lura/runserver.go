@@ -14,8 +14,8 @@ import (
 
 func GlobalRunServer(_ logging.Logger, srvCfg *luraconfig.ServiceConfig,
 	otelCfgParser kotelconfig.ConfigParserFn, stateFn state.GetterFn,
-	next luragin.RunServerFunc) luragin.RunServerFunc {
-
+	next luragin.RunServerFunc,
+) luragin.RunServerFunc {
 	otelCfg, err := otelCfgParser(*srvCfg)
 	if otelCfg == nil {
 		if err != nil && err != kotelconfig.ErrNoConfig {
