@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"sync"
 
-	"github.com/luraproject/lura/v2/config"
+	luraconfig "github.com/luraproject/lura/v2/config"
 )
 
 const (
@@ -23,7 +24,7 @@ var ErrNoConfig = errors.New("no config found for opentelemetry")
 //
 // In case no "Layers" config is provided, a set of defaults with
 // everything enabled will be used.
-func FromLura(srvCfg config.ServiceConfig) (*Config, error) {
+func FromLura(srvCfg luraconfig.ServiceConfig) (*Config, error) {
 	cfg := new(Config)
 	tmp, ok := srvCfg.ExtraConfig[Namespace]
 	if !ok {
@@ -95,4 +96,32 @@ func FromLura(srvCfg config.ServiceConfig) (*Config, error) {
 		}
 	}
 	return cfg, nil
+}
+
+// MemoizedConfigParser creates a function that parses a lura config,
+// using a ConfigParserFn and memoizes its results in a thread safe way.
+func MemoizedConfigParser(cfgParser ConfigParserFn) ConfigParserFn {
+	var mutex sync.RWMutex
+	var cfg *Config
+	var err error
+
+	return func(srvCfg luraconfig.ServiceConfig) (*Config, error) {
+		var c *Config
+		var e error
+
+		mutex.RLock()
+		c = cfg
+		e = err
+		mutex.RUnlock()
+
+		if c == nil && e == nil {
+			c, e := cfgParser(srvCfg)
+			mutex.Lock()
+			cfg = c
+			err = e
+			mutex.Unlock()
+		}
+
+		return c, e
+	}
 }

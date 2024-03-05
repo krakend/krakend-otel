@@ -12,9 +12,21 @@ import (
 	luragin "github.com/luraproject/lura/v2/router/gin"
 )
 
-func GlobalRunServer(_ logging.Logger, obsConfig *kotelconfig.Config, stateFn state.GetterFn, next luragin.RunServerFunc) luragin.RunServerFunc {
+func GlobalRunServer(_ logging.Logger, srvCfg *luraconfig.ServiceConfig, stateFn state.GetterFn,
+	otelCfgParser kotelconfig.ConfigParserFn, next luragin.RunServerFunc) luragin.RunServerFunc {
+
+	otelCfg, err := otelCfgParser(*srvCfg)
+	if otelCfg == nil {
+		if err != nil && err != kotelconfig.ErrNoConfig {
+			// TODO: we might want to log the error using otel at this layer
+		}
+		return next
+	}
+
+	// TODO: we might want to output some log info about using otel at this layer
+
 	return func(ctx context.Context, cfg luraconfig.ServiceConfig, h http.Handler) error {
-		wrappedH := kotelhttpserver.NewTrackingHandler(h, obsConfig, stateFn)
+		wrappedH := kotelhttpserver.NewTrackingHandler(h, otelCfg, stateFn)
 		return next(ctx, cfg, wrappedH)
 	}
 }

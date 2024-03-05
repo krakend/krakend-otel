@@ -101,10 +101,11 @@ func main() {
 	defaultPF := proxy.NewDefaultFactory(bf, logger)
 	pf := otellura.ProxyFactory(defaultPF, otelStateFn, obsConfig.Layers.Pipe, obsConfig.SkipPaths)
 
-	handlerF := otelgin.New(krakendgin.EndpointHandler, obsConfig.SkipPaths)
+	handlerF := otelgin.New(krakendgin.EndpointHandler, &serviceConfig, kotelconfig.FromLura)
 
 	runserverChain := krakendgin.RunServerFunc(
-		otellura.GlobalRunServer(logger, obsConfig, otelStateFn, server.RunServer))
+		otellura.GlobalRunServer(logger, &serviceConfig, otelStateFn,
+			kotelconfig.FromLura, server.RunServer))
 
 	engine := gin.Default()
 	engine.RedirectTrailingSlash = true

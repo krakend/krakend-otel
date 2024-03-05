@@ -6,7 +6,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/luraproject/lura/v2/config"
+	luraconfig "github.com/luraproject/lura/v2/config"
 	transport "github.com/luraproject/lura/v2/transport/http/client"
 
 	otelconfig "github.com/krakend/krakend-otel/config"
@@ -34,15 +34,30 @@ var defaultOpts = otelconfig.BackendOpts{
 // HTTPRequestExecutorFromConfig creates an HTTPRequestExecutor to be used
 // for the backend requests.
 func HTTPRequestExecutorFromConfig(clientFactory transport.HTTPClientFactory,
-	cfg *config.Backend, opts *otelconfig.BackendOpts, skipPaths []string,
+	cfg *luraconfig.Backend, opts *otelconfig.BackendOpts, skipPaths []string,
 	getState otelstate.GetterFn,
 ) transport.HTTPRequestExecutor {
 	cf := InstrumentedHTTPClientFactory(clientFactory, cfg, opts, skipPaths, getState)
 	return transport.DefaultHTTPRequestExecutor(cf)
 }
 
+func InstrumentedHTTPClientFactoryFromConfig(clientFactory transport.HTTPClientFactory,
+	cfg *luraconfig.Backend, srvCfg *luraconfig.ServiceConfig, otelCfgParser otelconfig.ConfigParserFn) transport.HTTPClientFactory {
+
+	otelCfg, err := otelCfgParser(*srvCfg)
+	if otelCfg == nil {
+		if err != nil && err != otelconfig.ErrNoConfig {
+			// TODO: we might want to log the error using otel at this layer
+		}
+		return clientFactory
+	}
+
+	return InstrumentedHTTPClientFactory(clientFactory, cfg, otelCfg.Layers.Backend,
+		otelCfg.SkipPaths, otelstate.GlobalState)
+}
+
 func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
-	cfg *config.Backend, opts *otelconfig.BackendOpts, skipPaths []string,
+	cfg *luraconfig.Backend, opts *otelconfig.BackendOpts, skipPaths []string,
 	getState otelstate.GetterFn,
 ) transport.HTTPClientFactory {
 	for _, sp := range skipPaths {

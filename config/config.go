@@ -5,7 +5,11 @@ package config
 
 import (
 	"fmt"
+
+	luraconfig "github.com/luraproject/lura/v2/config"
 )
+
+type ConfigParserFn func(srvCfg luraconfig.ServiceConfig) (*Config, error)
 
 // Config is the root configuration for the OTEL observability stack
 type Config struct {
