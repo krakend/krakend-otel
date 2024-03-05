@@ -12,8 +12,8 @@ import (
 
 // New wraps a handler factory adding some simple instrumentation to the generated handlers
 func New(hf krakendgin.HandlerFactory, srvCfg *luraconfig.ServiceConfig,
-	otelCfgParser kotelconfig.ConfigParserFn) krakendgin.HandlerFactory {
-
+	otelCfgParser kotelconfig.ConfigParserFn,
+) krakendgin.HandlerFactory {
 	otelCfg, err := otelCfgParser(*srvCfg)
 	if otelCfg == nil {
 		if err != nil && err != kotelconfig.ErrNoConfig {

@@ -42,8 +42,8 @@ func HTTPRequestExecutorFromConfig(clientFactory transport.HTTPClientFactory,
 }
 
 func InstrumentedHTTPClientFactoryFromConfig(clientFactory transport.HTTPClientFactory,
-	cfg *luraconfig.Backend, srvCfg *luraconfig.ServiceConfig, otelCfgParser otelconfig.ConfigParserFn) transport.HTTPClientFactory {
-
+	cfg *luraconfig.Backend, srvCfg *luraconfig.ServiceConfig, otelCfgParser otelconfig.ConfigParserFn,
+) transport.HTTPClientFactory {
 	otelCfg, err := otelCfgParser(*srvCfg)
 	if otelCfg == nil {
 		if err != nil && err != otelconfig.ErrNoConfig {
