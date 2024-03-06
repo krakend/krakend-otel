@@ -68,7 +68,6 @@ func RegisterGlobalInstance(ctx context.Context, l logging.Logger,
 	me map[string]exporter.MetricReader, te map[string]exporter.SpanExporter,
 	metricReportingPeriod int, traceSampleRate float64, serviceName string,
 ) (func(), error) {
-
 	shutdownFn := func() {}
 	prop := propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},

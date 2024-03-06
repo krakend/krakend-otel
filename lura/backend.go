@@ -34,15 +34,15 @@ var defaultOpts = otelconfig.BackendOpts{
 // HTTPRequestExecutorFromConfig creates an HTTPRequestExecutor to be used
 // for the backend requests.
 func HTTPRequestExecutorFromConfig(clientFactory transport.HTTPClientFactory,
-	cfg *luraconfig.Backend) transport.HTTPRequestExecutor {
-
+	cfg *luraconfig.Backend,
+) transport.HTTPRequestExecutor {
 	cf := InstrumentedHTTPClientFactory(clientFactory, cfg)
 	return transport.DefaultHTTPRequestExecutor(cf)
 }
 
 func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
-	cfg *luraconfig.Backend) transport.HTTPClientFactory {
-
+	cfg *luraconfig.Backend,
+) transport.HTTPClientFactory {
 	otelCfg := otelstate.GlobalConfig()
 	if otelCfg == nil {
 		return clientFactory
