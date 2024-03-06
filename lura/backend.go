@@ -34,47 +34,30 @@ var defaultOpts = otelconfig.BackendOpts{
 // HTTPRequestExecutorFromConfig creates an HTTPRequestExecutor to be used
 // for the backend requests.
 func HTTPRequestExecutorFromConfig(clientFactory transport.HTTPClientFactory,
-	cfg *luraconfig.Backend, opts *otelconfig.BackendOpts, skipPaths []string,
-	getState otelstate.GetterFn,
-) transport.HTTPRequestExecutor {
-	cf := InstrumentedHTTPClientFactory(clientFactory, cfg, opts, skipPaths, getState)
+	cfg *luraconfig.Backend) transport.HTTPRequestExecutor {
+
+	cf := InstrumentedHTTPClientFactory(clientFactory, cfg)
 	return transport.DefaultHTTPRequestExecutor(cf)
 }
 
-func InstrumentedHTTPClientFactoryFromConfig(clientFactory transport.HTTPClientFactory,
-	cfg *luraconfig.Backend, srvCfg *luraconfig.ServiceConfig, otelCfgParser otelconfig.ConfigParserFn,
-) transport.HTTPClientFactory {
-	otelCfg, err := otelCfgParser(*srvCfg)
-	if otelCfg == nil {
-		if err != nil && err != otelconfig.ErrNoConfig {
-			// TODO: we might want to log the error using otel at this layer
-		}
-		return clientFactory
-	}
-
-	return InstrumentedHTTPClientFactory(clientFactory, cfg, otelCfg.Layers.Backend,
-		otelCfg.SkipPaths, otelstate.GlobalState)
-}
-
 func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
-	cfg *luraconfig.Backend, opts *otelconfig.BackendOpts, skipPaths []string,
-	getState otelstate.GetterFn,
-) transport.HTTPClientFactory {
-	for _, sp := range skipPaths {
-		if cfg.ParentEndpoint == sp {
-			return clientFactory
-		}
-	}
+	cfg *luraconfig.Backend) transport.HTTPClientFactory {
 
-	if !opts.Enabled() {
-		// no configuration for the backend, then .. no metrics nor tracing:
+	otelCfg := otelstate.GlobalConfig()
+	if otelCfg == nil {
+		return clientFactory
+	}
+	if otelCfg.SkipEndpoint(cfg.ParentEndpoint) {
 		return clientFactory
 	}
 
-	if opts == nil {
-		opts = &defaultOpts
+	opts := otelCfg.BackendOpts(cfg)
+	if !opts.Enabled() {
+		return clientFactory
 	}
+	otelState := otelCfg.BackendOTEL(cfg)
 
+	// this might not be necessary:
 	if opts.Metrics == nil {
 		opts.Metrics = defaultOpts.Metrics
 	}
@@ -86,11 +69,9 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 	attrs := backendConfigAttributes(cfg)
 
 	metricAttrs := attrs
-	if len(opts.Metrics.StaticAttributes) > 0 {
-		for _, kv := range opts.Metrics.StaticAttributes {
-			if len(kv.Key) > 0 && len(kv.Value) > 0 {
-				metricAttrs = append(metricAttrs, attribute.String(kv.Key, kv.Value))
-			}
+	for _, kv := range opts.Metrics.StaticAttributes {
+		if len(kv.Key) > 0 && len(kv.Value) > 0 {
+			metricAttrs = append(metricAttrs, attribute.String(kv.Key, kv.Value))
 		}
 	}
 
@@ -99,11 +80,9 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 	copy(traceAttrs, attrs)
 	traceAttrs = append(traceAttrs,
 		attribute.String("krakend.stage", "backend-request"))
-	if len(opts.Traces.StaticAttributes) > 0 {
-		for _, kv := range opts.Traces.StaticAttributes {
-			if len(kv.Key) > 0 && len(kv.Value) > 0 {
-				traceAttrs = append(traceAttrs, attribute.String(kv.Key, kv.Value))
-			}
+	for _, kv := range opts.Traces.StaticAttributes {
+		if len(kv.Key) > 0 && len(kv.Value) > 0 {
+			traceAttrs = append(traceAttrs, attribute.String(kv.Key, kv.Value))
 		}
 	}
 
@@ -121,7 +100,7 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 			FixedAttributes:    traceAttrs,
 			ReportHeaders:      opts.Traces.ReportHeaders,
 		},
-		OTELInstance: getState,
+		OTELInstance: otelState,
 	}
 
 	return func(ctx context.Context) *http.Client {

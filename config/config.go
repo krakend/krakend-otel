@@ -5,14 +5,10 @@ package config
 
 import (
 	"fmt"
-
-	luraconfig "github.com/luraproject/lura/v2/config"
 )
 
-type ConfigParserFn func(srvCfg luraconfig.ServiceConfig) (*Config, error)
-
-// Config is the root configuration for the OTEL observability stack
-type Config struct {
+// ConfigData is the root configuration for the OTEL observability stack
+type ConfigData struct {
 	ServiceName           string      `json:"service_name"`
 	Layers                *LayersOpts `json:"layers"`
 	Exporters             Exporters   `json:"exporters"`
@@ -21,11 +17,11 @@ type Config struct {
 	TraceSampleRate       *float64    `json:"trace_sample_rate"`
 }
 
-func (c *Config) Validate() error {
+func (c *ConfigData) Validate() error {
 	return c.Exporters.Validate()
 }
 
-func (c *Config) UnsetFieldsToDefaults() {
+func (c *ConfigData) UnsetFieldsToDefaults() {
 	if c.MetricReportingPeriod == nil {
 		reportingPeriod := 30
 		c.MetricReportingPeriod = &reportingPeriod
@@ -33,6 +29,58 @@ func (c *Config) UnsetFieldsToDefaults() {
 	if c.TraceSampleRate == nil {
 		sampleRate := float64(1.0)
 		c.TraceSampleRate = &sampleRate
+	}
+
+	if c.Layers == nil {
+		c.Layers = &LayersOpts{}
+	}
+
+	if c.Layers.Global == nil {
+		c.Layers.Global = &GlobalOpts{
+			DisableMetrics:     false,
+			DisableTraces:      false,
+			DisablePropagation: false,
+		}
+	}
+
+	if c.Layers.Pipe == nil {
+		c.Layers.Pipe = &PipeOpts{
+			DisableMetrics: false,
+			DisableTraces:  false,
+		}
+	}
+
+	if c.Layers.Backend == nil {
+		c.Layers.Backend = &BackendOpts{}
+	}
+
+	if c.Layers.Backend.Metrics == nil {
+		c.Layers.Backend.Metrics = &BackendMetricOpts{
+			DisableStage:       false,
+			RoundTrip:          true,
+			ReadPayload:        true,
+			DetailedConnection: true,
+		}
+	}
+
+	if c.Layers.Backend.Traces == nil {
+		c.Layers.Backend.Traces = &BackendTraceOpts{
+			DisableStage:       false,
+			RoundTrip:          true,
+			ReadPayload:        true,
+			DetailedConnection: true,
+		}
+	}
+
+	if len(c.SkipPaths) == 0 {
+		// if there are no defined skip paths, we use the default ones:
+		// to avoid using defaultSkipPaths, provide a list with an empty string
+		c.SkipPaths = []string{
+			"/__health",
+			"/__debug/",
+			"/__echo/",
+			"/__stats/",
+		}
 	}
 }
 

@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 
-	kotelconfig "github.com/krakend/krakend-otel/config"
 	"github.com/krakend/krakend-otel/state"
 )
 
@@ -51,19 +50,17 @@ func (h *trackingHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	h.metrics.report(t, r)
 }
 
-func NewTrackingHandler(next http.Handler, obsCfg *kotelconfig.Config, stateFn state.GetterFn) http.Handler {
-	s := stateFn()
-
-	gCfg := &kotelconfig.GlobalOpts{}
-	if obsCfg.Layers != nil && obsCfg.Layers.Global != nil {
-		gCfg = obsCfg.Layers.Global
-	}
-
-	if gCfg.DisablePropagation && gCfg.DisableMetrics && gCfg.DisableTraces {
-		// nothing to do if everything is disabled
+func NewTrackingHandler(next http.Handler) http.Handler {
+	otelCfg := state.GlobalConfig()
+	if otelCfg == nil {
 		return next
 	}
 
+	gCfg := otelCfg.GlobalOpts()
+	if gCfg.DisablePropagation && gCfg.DisableMetrics && gCfg.DisableTraces {
+		return next
+	}
+	s := otelCfg.OTEL()
 	var prop propagation.TextMapPropagator
 	if !gCfg.DisablePropagation {
 		prop = s.Propagator()

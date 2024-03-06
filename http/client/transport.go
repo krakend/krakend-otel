@@ -27,7 +27,7 @@ type TransportOptions struct {
 	MetricsOpts TransportMetricsOptions
 	TracesOpts  TransportTracesOptions
 
-	OTELInstance state.GetterFn
+	OTELInstance state.OTEL
 }
 
 // readerWrapper defines a function to wrap a reader
@@ -58,9 +58,9 @@ type Transport struct {
 	// for spans started by this transport.
 	// StartOptions trace.StartOptions
 
-	tracesOpts      TransportTracesOptions
-	metricsOpts     TransportMetricsOptions
-	getOTELInstance state.GetterFn
+	tracesOpts  TransportTracesOptions
+	metricsOpts TransportMetricsOptions
+	otelState   state.OTEL
 
 	metrics *transportMetrics
 	traces  *transportTraces
@@ -105,9 +105,9 @@ func readWrapperBuilder(metricsOpts *TransportMetricsOptions, tracesOpts *Transp
 
 // NewRoundTripper creates an instrumented round tripper.
 func NewRoundTripper(base http.RoundTripper, metricsOpts TransportMetricsOptions,
-	tracesOpts TransportTracesOptions, clientName string, stateGetter state.GetterFn,
+	tracesOpts TransportTracesOptions, clientName string, otelState state.OTEL,
 ) http.RoundTripper {
-	rt := newTransport(base, metricsOpts, tracesOpts, clientName, stateGetter)
+	rt := newTransport(base, metricsOpts, tracesOpts, clientName, otelState)
 	if rt == nil {
 		return base
 	}
@@ -115,38 +115,27 @@ func NewRoundTripper(base http.RoundTripper, metricsOpts TransportMetricsOptions
 }
 
 func newTransport(base http.RoundTripper, metricsOpts TransportMetricsOptions,
-	tracesOpts TransportTracesOptions, clientName string, stateGetter state.GetterFn,
+	tracesOpts TransportTracesOptions, clientName string, otelState state.OTEL,
 ) *Transport {
 	if !tracesOpts.Enabled() && !metricsOpts.Enabled() {
 		return nil
 	}
-
-	// This could be using the call to `otel.GetGlobalTracer` directly,
-	// but for testability purposes, we have a way to obtain the tracer
-	// from a "state provider" function call
-	if stateGetter == nil {
-		stateGetter = state.GlobalState
-	}
-	inst := stateGetter()
-
-	if inst == nil {
-		// nothing to do here: the global observability state has not been configured,
-		// or we do not have traces nor metrics enabled.
+	if otelState == nil {
 		return nil
 	}
 
-	meter := inst.Meter()
-	tracer := inst.Tracer()
+	meter := otelState.Meter()
+	tracer := otelState.Tracer()
 
 	return &Transport{
-		base:            base,
-		propagator:      otel.GetTextMapPropagator(),
-		getOTELInstance: stateGetter,
-		tracesOpts:      tracesOpts,
-		metricsOpts:     metricsOpts,
-		metrics:         newTransportMetrics(&metricsOpts, meter, clientName),
-		traces:          newTransportTraces(&tracesOpts, tracer, clientName),
-		readerWrapper:   readWrapperBuilder(&metricsOpts, &tracesOpts, meter, tracer),
+		base:          base,
+		propagator:    otel.GetTextMapPropagator(),
+		otelState:     otelState,
+		tracesOpts:    tracesOpts,
+		metricsOpts:   metricsOpts,
+		metrics:       newTransportMetrics(&metricsOpts, meter, clientName),
+		traces:        newTransportTraces(&tracesOpts, tracer, clientName),
+		readerWrapper: readWrapperBuilder(&metricsOpts, &tracesOpts, meter, tracer),
 	}
 }
 

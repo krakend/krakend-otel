@@ -63,7 +63,7 @@ func CreatePrometheusExporters(ctx context.Context, promConfs []config.Prometheu
 }
 
 // Instances create instances for a given configuration.
-func Instances(ctx context.Context, cfg *config.Config) (map[string]MetricReader, map[string]SpanExporter, error) {
+func Instances(ctx context.Context, cfg *config.ConfigData) (map[string]MetricReader, map[string]SpanExporter, error) {
 	// Create OTLP (OpenTelemetry Line Protocol) exporters
 	m, s, err := CreateOTLPExporters(ctx, cfg.Exporters.OTLP)
 	if err != nil {

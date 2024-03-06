@@ -81,7 +81,7 @@ func middlewareProxy(next proxy.Proxy, tracer trace.Tracer, urlPattern string, d
 
 // Middleware creates a proxy that instruments the proxy it wraps by creating an span if enabled,
 // and report the duration of this stage in metrics if enabled.
-func Middleware(gsf state.GetterFn, metricsEnabled bool, tracesEnabled bool,
+func Middleware(gs state.OTEL, metricsEnabled bool, tracesEnabled bool,
 	stageName string, urlPattern string, staticAttrs []attribute.KeyValue,
 	reportHeaders bool,
 ) proxy.Middleware {
@@ -101,10 +101,6 @@ func Middleware(gsf state.GetterFn, metricsEnabled bool, tracesEnabled bool,
 		}
 		if len(next) < 1 {
 			panic(proxy.ErrNotEnoughProxies)
-		}
-		gs := gsf()
-		if gs == nil {
-			return next[0] // no instrumentation available
 		}
 
 		var duration metric.Float64Histogram
@@ -129,20 +125,9 @@ func Middleware(gsf state.GetterFn, metricsEnabled bool, tracesEnabled bool,
 
 // ProxyFactory returns a proxy stage factory that wraps the provided proxy factory with the
 // instrumentation [Middleware] based on the configuration options.
-func ProxyFactory(pf proxy.Factory, gsfn state.GetterFn, opts *kotelconfig.PipeOpts,
-	skipPaths []string,
-) proxy.FactoryFunc {
-	if opts == nil {
-		return pf.New
-	}
-	if gsfn == nil {
-		gsfn = state.GlobalState
-	}
-
-	metricsEnabled := !opts.DisableMetrics
-	tracesEnabled := !opts.DisableTraces
-
-	if !metricsEnabled && !tracesEnabled {
+func ProxyFactory(pf proxy.Factory) proxy.FactoryFunc {
+	otelCfg := state.GlobalConfig()
+	if otelCfg == nil {
 		return pf.New
 	}
 
@@ -151,45 +136,43 @@ func ProxyFactory(pf proxy.Factory, gsfn state.GetterFn, opts *kotelconfig.PipeO
 		if err != nil {
 			return next, err
 		}
-		for _, sp := range skipPaths {
-			if cfg.Endpoint == sp {
-				return next, nil
-			}
+
+		if otelCfg.SkipEndpoint(cfg.Endpoint) {
+			return next, nil
 		}
 
+		pipeOpts := otelCfg.EndpointPipeOpts(cfg)
+		if pipeOpts.DisableMetrics && pipeOpts.DisableTraces {
+			return next, nil
+		}
+
+		gs := otelCfg.EndpointOTEL(cfg)
 		urlPattern := kotelconfig.NormalizeURLPattern(cfg.Endpoint)
-		return Middleware(gsfn, metricsEnabled, tracesEnabled, "proxy", urlPattern,
-			[]attribute.KeyValue{
-				semconv.HTTPRoute(urlPattern),
-			}, opts.ReportHeaders)(next), nil
+		attrs := []attribute.KeyValue{semconv.HTTPRoute(urlPattern)}
+		return Middleware(gs, !pipeOpts.DisableMetrics, !pipeOpts.DisableTraces,
+			"proxy", urlPattern, attrs, pipeOpts.ReportHeaders)(next), nil
 	}
 }
 
 // BackendFactory returns a backend factory that wraps the provided backend factory with the
 // instrumentation [Middleware] based on the configuration options.
-func BackendFactory(bf proxy.BackendFactory, gsfn state.GetterFn, opts *kotelconfig.BackendOpts,
-	skipPaths []string,
-) proxy.BackendFactory {
-	if opts == nil || (opts.Metrics.DisableStage && opts.Traces.DisableStage) {
+func BackendFactory(bf proxy.BackendFactory) proxy.BackendFactory {
+	otelCfg := state.GlobalConfig()
+	if otelCfg == nil {
 		return bf
 	}
-	return OTELBackendFactory(bf, gsfn, !opts.Metrics.DisableStage, !opts.Traces.DisableStage,
-		skipPaths, opts.Traces.ReportHeaders)
-}
 
-func OTELBackendFactory(bf proxy.BackendFactory, gsfn state.GetterFn, metricsEnabled bool, tracesEnabled bool,
-	skipPaths []string, reportHeaders bool,
-) proxy.BackendFactory {
 	return func(cfg *config.Backend) proxy.Proxy {
 		next := bf(cfg)
-		for _, sp := range skipPaths {
-			if cfg.ParentEndpoint == sp {
-				return next
-			}
+		if otelCfg.SkipEndpoint(cfg.ParentEndpoint) {
+			return next
 		}
+
+		backendOpts := otelCfg.BackendOpts(cfg)
+		gs := otelCfg.BackendOTEL(cfg)
 		staticAttrs := backendConfigAttributes(cfg)
 		urlPattern := kotelconfig.NormalizeURLPattern(cfg.URLPattern)
-		return Middleware(gsfn, metricsEnabled, tracesEnabled, "backend", urlPattern,
-			staticAttrs, reportHeaders)(next)
+		return Middleware(gs, !backendOpts.Metrics.DisableStage, !backendOpts.Traces.DisableStage,
+			"backend", urlPattern, staticAttrs, backendOpts.Traces.ReportHeaders)(next)
 	}
 }

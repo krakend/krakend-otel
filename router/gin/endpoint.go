@@ -8,43 +8,27 @@ import (
 
 	kotelconfig "github.com/krakend/krakend-otel/config"
 	kotelserver "github.com/krakend/krakend-otel/http/server"
+	otelstate "github.com/krakend/krakend-otel/state"
 )
 
 // New wraps a handler factory adding some simple instrumentation to the generated handlers
-func New(hf krakendgin.HandlerFactory, srvCfg *luraconfig.ServiceConfig,
-	otelCfgParser kotelconfig.ConfigParserFn,
-) krakendgin.HandlerFactory {
-	otelCfg, err := otelCfgParser(*srvCfg)
-	if otelCfg == nil {
-		if err != nil && err != kotelconfig.ErrNoConfig {
-			// TODO: we might want to log the error using otel at this layer
-		}
-		return hf
-	}
-
-	// TODO: we might want to output some log info about using otel at this layer
-
+func New(hf krakendgin.HandlerFactory) krakendgin.HandlerFactory {
 	return func(cfg *luraconfig.EndpointConfig, p proxy.Proxy) gin.HandlerFunc {
-		return HandlerFunc(cfg, otelCfg.SkipPaths, hf(cfg, p))
-	}
-}
-
-// HandlerFunc task is to fill the "matched endpoint pattern" once we know it, so the
-// global layer tracking can report it for metrics and traces.
-func HandlerFunc(cfg *luraconfig.EndpointConfig, skipPaths []string, next gin.HandlerFunc,
-) gin.HandlerFunc {
-	// skip paths will not try to read the propagation header, because nothing
-	// in the downstream pipeline will be instruemented. The header can be passed
-	// using the regular `headers` feature.
-	for _, sp := range skipPaths {
-		if cfg.Endpoint == sp {
-			return next
+		otelCfg := otelstate.GlobalConfig()
+		if otelCfg == nil {
+			return hf(cfg, p)
 		}
-	}
-
-	urlPattern := kotelconfig.NormalizeURLPattern(cfg.Endpoint)
-	return func(c *gin.Context) {
-		kotelserver.SetEndpointPattern(c.Request.Context(), urlPattern)
-		next(c)
+		if otelCfg.SkipEndpoint(cfg.Endpoint) {
+			return hf(cfg, p)
+		}
+		urlPattern := kotelconfig.NormalizeURLPattern(cfg.Endpoint)
+		next := hf(cfg, p)
+		return func(c *gin.Context) {
+			// we set the matched route to a data struct stored in the
+			// context by the outer http layer, so it can be reported
+			// in metrics and traces.
+			kotelserver.SetEndpointPattern(c.Request.Context(), urlPattern)
+			next(c)
+		}
 	}
 }
