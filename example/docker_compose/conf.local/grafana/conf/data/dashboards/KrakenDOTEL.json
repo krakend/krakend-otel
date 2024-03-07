@@ -3192,7 +3192,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "s"
         },
         "overrides": []
       },
@@ -6935,6 +6936,7 @@
         "type": "prometheus",
         "uid": "b9564da7-2fba-447a-934e-e0217745974e"
       },
+      "description": "Percentile 95 of backend duration",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -7027,7 +7029,7 @@
           "useBackend": false
         }
       ],
-      "title": "Avg backend duration",
+      "title": "p95 backend duration",
       "type": "timeseries"
     },
     {
