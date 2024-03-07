@@ -8110,7 +8110,7 @@
           "type": "prometheus",
           "uid": "b9564da7-2fba-447a-934e-e0217745974e"
         },
-        "definition": "label_values(krakend_pipe_duration_count,http_route)",
+        "definition": "label_values(krakend_proxy_duration_bucket,http_route)",
         "description": "KrakenD exposed endpoint",
         "hide": 0,
         "includeAll": true,
@@ -8119,8 +8119,9 @@
         "name": "endpoint",
         "options": [],
         "query": {
-          "query": "label_values(krakend_pipe_duration_count,http_route)",
-          "refId": "StandardVariableQuery"
+          "qryType": 1,
+          "query": "label_values(krakend_proxy_duration_bucket,http_route)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
         "regex": "",
