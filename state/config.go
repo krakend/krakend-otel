@@ -22,11 +22,13 @@ type Config interface {
 	SkipEndpoint(endpoint string) bool
 }
 
+var _ Config = (*StateConfig)(nil)
+
 type StateConfig struct {
 	cfgData config.ConfigData
 }
 
-func (_ *StateConfig) OTEL() OTEL {
+func (*StateConfig) OTEL() OTEL {
 	return GlobalState()
 }
 
@@ -34,7 +36,7 @@ func (s *StateConfig) GlobalOpts() *config.GlobalOpts {
 	return s.cfgData.Layers.Global
 }
 
-func (_ *StateConfig) EndpointOTEL(_ *luraconfig.EndpointConfig) OTEL {
+func (*StateConfig) EndpointOTEL(_ *luraconfig.EndpointConfig) OTEL {
 	return GlobalState()
 }
 
@@ -46,7 +48,7 @@ func (s *StateConfig) EndpointBackendOpts(_ *luraconfig.Backend) *config.Backend
 	return s.cfgData.Layers.Backend
 }
 
-func (_ *StateConfig) BackendOTEL(_ *luraconfig.Backend) OTEL {
+func (*StateConfig) BackendOTEL(_ *luraconfig.Backend) OTEL {
 	return GlobalState()
 }
 
