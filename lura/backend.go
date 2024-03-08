@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	luraconfig "github.com/luraproject/lura/v2/config"
 	transport "github.com/luraproject/lura/v2/transport/http/client"
@@ -66,7 +67,13 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 	}
 
 	urlPattern := otelconfig.NormalizeURLPattern(cfg.URLPattern)
-	attrs := backendConfigAttributes(cfg)
+	parentEndpoint := otelconfig.NormalizeURLPattern(cfg.ParentEndpoint)
+	attrs := []attribute.KeyValue{
+		semconv.HTTPRequestMethodKey.String(cfg.Method),
+		semconv.HTTPRoute(urlPattern), // <- for traces we can use URLFull to not have the matched path
+		attribute.String("krakend.endpoint.route", parentEndpoint),
+		attribute.String("krakend.endpoint.method", cfg.ParentEndpointMethod),
+	}
 
 	metricAttrs := attrs
 	for _, kv := range opts.Metrics.StaticAttributes {
