@@ -97,7 +97,7 @@ func readWrapperBuilder(metricsOpts *TransportMetricsOptions, tracesOpts *Transp
 		t = tracer
 	}
 
-	irf := otelio.NewInstrumentedReaderFactory("http.client.request.read.", attrT, attrM, t, m)
+	irf := otelio.NewInstrumentedReaderFactory("http.client.response.read.", attrT, attrM, t, m)
 	return func(r io.Reader, ctx context.Context) io.ReadCloser {
 		return irf(r, ctx)
 	}
