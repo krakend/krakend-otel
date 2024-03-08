@@ -57,7 +57,7 @@ func RegisterWithConfig(ctx context.Context, l logging.Logger, cfg *config.Confi
 	}
 	exporter.SetGlobalExporterInstances(me, te)
 	shutdown, err := RegisterGlobalInstance(ctx, l, me, te, *cfg.MetricReportingPeriod, *cfg.TraceSampleRate, cfg.ServiceName)
-	if err != nil {
+	if err == nil {
 		state.SetGlobalConfig(state.NewConfig(cfg))
 	}
 	return shutdown, err

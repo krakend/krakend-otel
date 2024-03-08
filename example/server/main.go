@@ -65,6 +65,7 @@ func main() {
 	serviceConfig, err := parser.Parse(*configFile)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err.Error())
+		cancel()
 		return
 	}
 	serviceConfig.Debug = serviceConfig.Debug || *debug
@@ -77,6 +78,7 @@ func main() {
 	shutdownFn, err := kotel.Register(ctx, logger, serviceConfig)
 	if err != nil {
 		fmt.Printf("--- failed to register: %s\n", err.Error())
+		cancel()
 		return
 	}
 	defer shutdownFn()
