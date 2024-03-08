@@ -20,9 +20,7 @@ type middlewareMeter struct {
 
 func newMiddlewareMeter(s state.OTEL, stageName string, attrs []attribute.KeyValue) (*middlewareMeter, error) {
 	mAttrs := make([]attribute.KeyValue, 0, len(attrs))
-	for _, sa := range attrs {
-		mAttrs = append(mAttrs, sa)
-	}
+	mAttrs = append(mAttrs, attrs...)
 
 	meter := s.Meter()
 	var err error
@@ -33,7 +31,7 @@ func newMiddlewareMeter(s state.OTEL, stageName string, attrs []attribute.KeyVal
 	}
 	return &middlewareMeter{
 		duration: duration,
-		attrs:    metric.WithAttributes(attrs...),
+		attrs:    metric.WithAttributes(mAttrs...),
 	}, nil
 }
 

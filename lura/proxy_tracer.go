@@ -24,9 +24,7 @@ type middlewareTracer struct {
 func newMiddlewareTracer(s state.OTEL, name string, stageName string, reportHeaders bool, attrs []attribute.KeyValue) *middlewareTracer {
 	tracer := s.Tracer()
 	tAttrs := make([]attribute.KeyValue, 0, len(attrs)+1)
-	for _, sa := range attrs {
-		tAttrs = append(tAttrs, sa)
-	}
+	tAttrs = append(tAttrs, attrs...)
 	tAttrs = append(tAttrs, attribute.String("krakend.stage", stageName))
 	return &middlewareTracer{
 		name:          name,

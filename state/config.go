@@ -26,7 +26,7 @@ type StateConfig struct {
 	cfgData config.ConfigData
 }
 
-func (s *StateConfig) OTEL() OTEL {
+func (_ *StateConfig) OTEL() OTEL {
 	return GlobalState()
 }
 
@@ -34,23 +34,23 @@ func (s *StateConfig) GlobalOpts() *config.GlobalOpts {
 	return s.cfgData.Layers.Global
 }
 
-func (s *StateConfig) EndpointOTEL(cfg *luraconfig.EndpointConfig) OTEL {
+func (_ *StateConfig) EndpointOTEL(_ *luraconfig.EndpointConfig) OTEL {
 	return GlobalState()
 }
 
-func (s *StateConfig) EndpointPipeOpts(cfg *luraconfig.EndpointConfig) *config.PipeOpts {
+func (s *StateConfig) EndpointPipeOpts(_ *luraconfig.EndpointConfig) *config.PipeOpts {
 	return s.cfgData.Layers.Pipe
 }
 
-func (s *StateConfig) EndpointBackendOpts(cfg *luraconfig.Backend) *config.BackendOpts {
+func (s *StateConfig) EndpointBackendOpts(_ *luraconfig.Backend) *config.BackendOpts {
 	return s.cfgData.Layers.Backend
 }
 
-func (s *StateConfig) BackendOTEL(cfg *luraconfig.Backend) OTEL {
+func (_ *StateConfig) BackendOTEL(_ *luraconfig.Backend) OTEL {
 	return GlobalState()
 }
 
-func (s *StateConfig) BackendOpts(cfg *luraconfig.Backend) *config.BackendOpts {
+func (s *StateConfig) BackendOpts(_ *luraconfig.Backend) *config.BackendOpts {
 	return s.cfgData.Layers.Backend
 }
 
