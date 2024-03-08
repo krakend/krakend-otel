@@ -50,7 +50,6 @@ func metricsAndTracesMiddleware(next proxy.Proxy, mm *middlewareMeter, mt *middl
 func middleware(gs state.OTEL, metricsEnabled bool, tracesEnabled bool,
 	stageName string, urlPattern string, attrs []attribute.KeyValue, reportHeaders bool,
 ) proxy.Middleware {
-
 	var mt *middlewareTracer
 	var mm *middlewareMeter
 	var err error
