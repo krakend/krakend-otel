@@ -36,10 +36,8 @@ import (
 	"github.com/luraproject/lura/v2/transport/http/server"
 
 	kotel "github.com/krakend/krakend-otel"
-	kotelconfig "github.com/krakend/krakend-otel/config"
 	otellura "github.com/krakend/krakend-otel/lura"
 	otelgin "github.com/krakend/krakend-otel/router/gin"
-	"github.com/krakend/krakend-otel/state"
 )
 
 func main() {
@@ -67,6 +65,7 @@ func main() {
 	serviceConfig, err := parser.Parse(*configFile)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err.Error())
+		cancel()
 		return
 	}
 	serviceConfig.Debug = serviceConfig.Debug || *debug
@@ -76,35 +75,28 @@ func main() {
 
 	logger, _ := logging.NewLogger(*logLevel, os.Stdout, "[KRAKEND]")
 
-	obsConfig, err := kotelconfig.FromLura(serviceConfig)
-	if err != nil {
-		fmt.Printf("ERROR: no config found for open telemetry: %s\n", err.Error())
-		return
-	}
-
 	shutdownFn, err := kotel.Register(ctx, logger, serviceConfig)
 	if err != nil {
 		fmt.Printf("--- failed to register: %s\n", err.Error())
+		cancel()
 		return
 	}
 	defer shutdownFn()
 
-	otelStateFn := state.GlobalState
-
 	bf := func(backendConfig *config.Backend) proxy.Proxy {
 		reqExec := otellura.HTTPRequestExecutorFromConfig(client.NewHTTPClient,
-			backendConfig, obsConfig.Layers.Backend, obsConfig.SkipPaths, otelStateFn)
+			backendConfig)
 		return proxy.NewHTTPProxyWithHTTPExecutor(backendConfig, reqExec, backendConfig.Decoder)
 	}
-	bf = otellura.BackendFactory(bf, otelStateFn, obsConfig.Layers.Backend, obsConfig.SkipPaths)
+	bf = otellura.BackendFactory(bf)
 
 	defaultPF := proxy.NewDefaultFactory(bf, logger)
-	pf := otellura.ProxyFactory(defaultPF, otelStateFn, obsConfig.Layers.Pipe, obsConfig.SkipPaths)
+	pf := otellura.ProxyFactory(defaultPF)
 
-	handlerF := otelgin.New(krakendgin.EndpointHandler, obsConfig.SkipPaths)
+	handlerF := otelgin.New(krakendgin.EndpointHandler)
 
 	runserverChain := krakendgin.RunServerFunc(
-		otellura.GlobalRunServer(logger, obsConfig, otelStateFn, server.RunServer))
+		otellura.GlobalRunServer(logger, server.RunServer))
 
 	engine := gin.Default()
 	engine.RedirectTrailingSlash = true

@@ -9,8 +9,8 @@ scrape_configs:
     metrics_path: '/metrics'
     static_configs:
       - targets:
-        - '192.168.1.36:59091'
-        - '192.168.1.36:59092'
-        - '192.168.1.36:59093'
+        - '192.168.1.12:59091'
+        - '192.168.1.12:59092'
+        - '192.168.1.12:59093'
         labels:
           app: kotel_example

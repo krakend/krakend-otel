@@ -5,8 +5,9 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/semconv/v1.21.0"
 
-	"github.com/luraproject/lura/v2/config"
+	luraconfig "github.com/luraproject/lura/v2/config"
 	transport "github.com/luraproject/lura/v2/transport/http/client"
 
 	otelconfig "github.com/krakend/krakend-otel/config"
@@ -34,32 +35,30 @@ var defaultOpts = otelconfig.BackendOpts{
 // HTTPRequestExecutorFromConfig creates an HTTPRequestExecutor to be used
 // for the backend requests.
 func HTTPRequestExecutorFromConfig(clientFactory transport.HTTPClientFactory,
-	cfg *config.Backend, opts *otelconfig.BackendOpts, skipPaths []string,
-	getState otelstate.GetterFn,
+	cfg *luraconfig.Backend,
 ) transport.HTTPRequestExecutor {
-	cf := InstrumentedHTTPClientFactory(clientFactory, cfg, opts, skipPaths, getState)
+	cf := InstrumentedHTTPClientFactory(clientFactory, cfg)
 	return transport.DefaultHTTPRequestExecutor(cf)
 }
 
 func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
-	cfg *config.Backend, opts *otelconfig.BackendOpts, skipPaths []string,
-	getState otelstate.GetterFn,
+	cfg *luraconfig.Backend,
 ) transport.HTTPClientFactory {
-	for _, sp := range skipPaths {
-		if cfg.ParentEndpoint == sp {
-			return clientFactory
-		}
+	otelCfg := otelstate.GlobalConfig()
+	if otelCfg == nil {
+		return clientFactory
 	}
-
-	if !opts.Enabled() {
-		// no configuration for the backend, then .. no metrics nor tracing:
+	if otelCfg.SkipEndpoint(cfg.ParentEndpoint) {
 		return clientFactory
 	}
 
-	if opts == nil {
-		opts = &defaultOpts
+	opts := otelCfg.BackendOpts(cfg)
+	if !opts.Enabled() {
+		return clientFactory
 	}
+	otelState := otelCfg.BackendOTEL(cfg)
 
+	// this might not be necessary:
 	if opts.Metrics == nil {
 		opts.Metrics = defaultOpts.Metrics
 	}
@@ -68,14 +67,18 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 	}
 
 	urlPattern := otelconfig.NormalizeURLPattern(cfg.URLPattern)
-	attrs := backendConfigAttributes(cfg)
+	parentEndpoint := otelconfig.NormalizeURLPattern(cfg.ParentEndpoint)
+	attrs := []attribute.KeyValue{
+		semconv.HTTPRequestMethodKey.String(cfg.Method),
+		semconv.HTTPRoute(urlPattern), // <- for traces we can use URLFull to not have the matched path
+		attribute.String("krakend.endpoint.route", parentEndpoint),
+		attribute.String("krakend.endpoint.method", cfg.ParentEndpointMethod),
+	}
 
 	metricAttrs := attrs
-	if len(opts.Metrics.StaticAttributes) > 0 {
-		for _, kv := range opts.Metrics.StaticAttributes {
-			if len(kv.Key) > 0 && len(kv.Value) > 0 {
-				metricAttrs = append(metricAttrs, attribute.String(kv.Key, kv.Value))
-			}
+	for _, kv := range opts.Metrics.StaticAttributes {
+		if len(kv.Key) > 0 && len(kv.Value) > 0 {
+			metricAttrs = append(metricAttrs, attribute.String(kv.Key, kv.Value))
 		}
 	}
 
@@ -84,11 +87,9 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 	copy(traceAttrs, attrs)
 	traceAttrs = append(traceAttrs,
 		attribute.String("krakend.stage", "backend-request"))
-	if len(opts.Traces.StaticAttributes) > 0 {
-		for _, kv := range opts.Traces.StaticAttributes {
-			if len(kv.Key) > 0 && len(kv.Value) > 0 {
-				traceAttrs = append(traceAttrs, attribute.String(kv.Key, kv.Value))
-			}
+	for _, kv := range opts.Traces.StaticAttributes {
+		if len(kv.Key) > 0 && len(kv.Value) > 0 {
+			traceAttrs = append(traceAttrs, attribute.String(kv.Key, kv.Value))
 		}
 	}
 
@@ -106,7 +107,7 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 			FixedAttributes:    traceAttrs,
 			ReportHeaders:      opts.Traces.ReportHeaders,
 		},
-		OTELInstance: getState,
+		OTELInstance: otelState,
 	}
 
 	return func(ctx context.Context) *http.Client {

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/luraproject/lura/v2/config"
+	luraconfig "github.com/luraproject/lura/v2/config"
 )
 
 const (
@@ -23,8 +23,8 @@ var ErrNoConfig = errors.New("no config found for opentelemetry")
 //
 // In case no "Layers" config is provided, a set of defaults with
 // everything enabled will be used.
-func FromLura(srvCfg config.ServiceConfig) (*Config, error) {
-	cfg := new(Config)
+func FromLura(srvCfg luraconfig.ServiceConfig) (*ConfigData, error) {
+	cfg := new(ConfigData)
 	tmp, ok := srvCfg.ExtraConfig[Namespace]
 	if !ok {
 		return nil, ErrNoConfig
@@ -35,58 +35,6 @@ func FromLura(srvCfg config.ServiceConfig) (*Config, error) {
 		return nil, err
 	}
 
-	if cfg.Layers == nil {
-		cfg.Layers = &LayersOpts{}
-	}
-
-	if cfg.Layers.Global == nil {
-		cfg.Layers.Global = &GlobalOpts{
-			DisableMetrics:     false,
-			DisableTraces:      false,
-			DisablePropagation: false,
-		}
-	}
-
-	if cfg.Layers.Pipe == nil {
-		cfg.Layers.Pipe = &PipeOpts{
-			DisableMetrics: false,
-			DisableTraces:  false,
-		}
-	}
-
-	if cfg.Layers.Backend == nil {
-		cfg.Layers.Backend = &BackendOpts{}
-	}
-
-	if cfg.Layers.Backend.Metrics == nil {
-		cfg.Layers.Backend.Metrics = &BackendMetricOpts{
-			DisableStage:       false,
-			RoundTrip:          true,
-			ReadPayload:        true,
-			DetailedConnection: true,
-		}
-	}
-
-	if cfg.Layers.Backend.Traces == nil {
-		cfg.Layers.Backend.Traces = &BackendTraceOpts{
-			DisableStage:       false,
-			RoundTrip:          true,
-			ReadPayload:        true,
-			DetailedConnection: true,
-		}
-	}
-
-	if len(cfg.SkipPaths) == 0 {
-		// if there are no defined skip paths, we use the default ones:
-		// to avoid using defaultSkipPaths, provide a list with an empty string
-		cfg.SkipPaths = []string{
-			"/__health",
-			"/__debug/",
-			"/__echo/",
-			"/__stats/",
-		}
-	}
-
 	if cfg.ServiceName == "" {
 		if srvCfg.Name != "" {
 			cfg.ServiceName = srvCfg.Name
@@ -94,5 +42,7 @@ func FromLura(srvCfg config.ServiceConfig) (*Config, error) {
 			cfg.ServiceName = "KrakenD"
 		}
 	}
+
+	cfg.UnsetFieldsToDefaults()
 	return cfg, nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	kotelconfig "github.com/krakend/krakend-otel/config"
 	kotelhttpserver "github.com/krakend/krakend-otel/http/server"
 	"github.com/krakend/krakend-otel/state"
 	luraconfig "github.com/luraproject/lura/v2/config"
@@ -12,9 +11,14 @@ import (
 	luragin "github.com/luraproject/lura/v2/router/gin"
 )
 
-func GlobalRunServer(_ logging.Logger, obsConfig *kotelconfig.Config, stateFn state.GetterFn, next luragin.RunServerFunc) luragin.RunServerFunc {
+func GlobalRunServer(_ logging.Logger, next luragin.RunServerFunc) luragin.RunServerFunc {
+	otelCfg := state.GlobalConfig()
+	if otelCfg == nil {
+		return next
+	}
+
 	return func(ctx context.Context, cfg luraconfig.ServiceConfig, h http.Handler) error {
-		wrappedH := kotelhttpserver.NewTrackingHandler(h, obsConfig, stateFn)
+		wrappedH := kotelhttpserver.NewTrackingHandler(h)
 		return next(ctx, cfg, wrappedH)
 	}
 }

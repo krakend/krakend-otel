@@ -45,23 +45,27 @@ func Register(ctx context.Context, l logging.Logger, srvCfg lconfig.ServiceConfi
 // RegisterWithConfig instantiates the configured exporters from an already
 // parsed config: sets the global exporter instances, the global propagation method, and
 // the global KrakenD otel state, so it can be used from anywhere.
-func RegisterWithConfig(ctx context.Context, l logging.Logger, cfg *config.Config) (func(), error) {
+func RegisterWithConfig(ctx context.Context, l logging.Logger, cfg *config.ConfigData) (func(), error) {
 	shutdownFn := func() {}
 	if err := cfg.Validate(); err != nil {
 		return shutdownFn, err
 	}
-	cfg.UnsetFieldsToDefaults()
 
 	me, te, err := exporter.Instances(ctx, cfg)
 	if err != nil {
 		return shutdownFn, err
 	}
 	exporter.SetGlobalExporterInstances(me, te)
-	return RegisterGlobalInstance(ctx, l, me, te, *cfg.MetricReportingPeriod, *cfg.TraceSampleRate, cfg.ServiceName)
+	shutdown, err := RegisterGlobalInstance(ctx, l, me, te, *cfg.MetricReportingPeriod, *cfg.TraceSampleRate, cfg.ServiceName)
+	if err == nil {
+		state.SetGlobalConfig(state.NewConfig(cfg))
+	}
+	return shutdown, err
 }
 
 // RegisterGlobalInstance creates the instance that will be used to report metrics and traces
-func RegisterGlobalInstance(ctx context.Context, l logging.Logger, me map[string]exporter.MetricReader, te map[string]exporter.SpanExporter,
+func RegisterGlobalInstance(ctx context.Context, l logging.Logger,
+	me map[string]exporter.MetricReader, te map[string]exporter.SpanExporter,
 	metricReportingPeriod int, traceSampleRate float64, serviceName string,
 ) (func(), error) {
 	shutdownFn := func() {}

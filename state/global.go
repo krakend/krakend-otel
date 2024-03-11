@@ -5,23 +5,39 @@ import (
 )
 
 var (
-	otelMu    sync.RWMutex
-	otelState *OTELState
+	otelState      *OTELState
+	otelStateMutex sync.RWMutex
+
+	globalConfig      Config
+	globalConfigMutex sync.RWMutex
 )
 
 var _ GetterFn = GlobalState
 
 // GlobalState retrieves a configured global state
 func GlobalState() OTEL {
-	otelMu.RLock()
+	otelStateMutex.RLock()
 	s := otelState
-	otelMu.RUnlock()
+	otelStateMutex.RUnlock()
 	return s
 }
 
 // SetGlobalState set the provided state as the global state.
 func SetGlobalState(s *OTELState) {
-	otelMu.Lock()
+	otelStateMutex.Lock()
 	otelState = s
-	otelMu.Unlock()
+	otelStateMutex.Unlock()
+}
+
+func SetGlobalConfig(cfg Config) {
+	globalConfigMutex.Lock()
+	globalConfig = cfg
+	globalConfigMutex.Unlock()
+}
+
+func GlobalConfig() Config {
+	globalConfigMutex.RLock()
+	c := globalConfig
+	globalConfigMutex.RUnlock()
+	return c
 }
