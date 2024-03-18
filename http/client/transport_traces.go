@@ -53,7 +53,7 @@ func (t *transportTraces) start(rtt *roundTripTracking,
 		return
 	}
 
-	ctx, span := t.tracer.Start(rtt.req.Context(), t.spanName)
+	ctx, span := t.tracer.Start(rtt.req.Context(), t.spanName, trace.WithSpanKind(trace.SpanKindClient))
 	if span == nil || !span.IsRecording() {
 		// we might not be recording because of sampling
 		return

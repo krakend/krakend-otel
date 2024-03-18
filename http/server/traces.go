@@ -38,7 +38,7 @@ func (t *tracesHTTP) start(r *http.Request, tr *tracking) *http.Request {
 	if t == nil || t.tracer == nil || r.URL == nil {
 		return r
 	}
-	tr.ctx, tr.span = t.tracer.Start(r.Context(), r.URL.Path)
+	tr.ctx, tr.span = t.tracer.Start(r.Context(), r.URL.Path, trace.WithSpanKind(trace.SpanKindServer))
 	r = r.WithContext(tr.ctx)
 	attrs := otelhttp.TraceRequestAttrs(r)
 	tr.span.SetAttributes(attrs...)
