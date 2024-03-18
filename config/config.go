@@ -10,6 +10,7 @@ import (
 // ConfigData is the root configuration for the OTEL observability stack
 type ConfigData struct {
 	ServiceName           string      `json:"service_name"`
+	ServiceVersion        string      `json:"service_version"`
 	Layers                *LayersOpts `json:"layers"`
 	Exporters             Exporters   `json:"exporters"`
 	SkipPaths             []string    `json:"skip_paths"`
