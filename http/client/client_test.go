@@ -22,7 +22,7 @@ import (
 
 type fakeService struct{}
 
-func (s *fakeService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (_ *fakeService) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte("foo bar"))
 }
 
@@ -70,11 +70,11 @@ func (o *testOTEL) Meter() metric.Meter {
 	return o.meter
 }
 
-func (o *testOTEL) Propagator() propagation.TextMapPropagator {
+func (_ *testOTEL) Propagator() propagation.TextMapPropagator {
 	return nil
 }
 
-func (o *testOTEL) Shutdown(ctx context.Context) {
+func (_ *testOTEL) Shutdown(_ context.Context) {
 }
 
 func TestInstrumentedHTTPClient(t *testing.T) {
