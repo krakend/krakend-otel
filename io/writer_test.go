@@ -41,7 +41,7 @@ func TestWriterHappyPath(t *testing.T) {
 		attribute.Int("http.status_code", 201),
 		attribute.String("url.path", "/this/{matched}/path"),
 	}
-	writer := NewInstrumentedWriter(&bw, ctx, attrsT, attrsM, tracer, meter)
+	writer := NewInstrumentedWriter("", &bw, ctx, attrsT, attrsM, tracer, meter)
 
 	startedSpans := spanRecorder.Started()
 	if len(startedSpans) > initialStartedSpansLen {
@@ -103,10 +103,10 @@ func TestWriterHappyPath(t *testing.T) {
 	// --> check that we have all the metrics we want to report
 	sm := rm.ScopeMetrics[0]
 	wantedMetrics := map[string]bool{
-		"written-size":      false,
-		"written-size-hist": false,
-		"written-time":      false,
-		"written-time-hist": false,
+		"written.size":      false,
+		"written.size-hist": false,
+		"written.time":      false,
+		"written.time-hist": false,
 		// "written-errors":    false,
 	}
 	numWantedMetrics := len(wantedMetrics)
@@ -122,7 +122,7 @@ func TestWriterHappyPath(t *testing.T) {
 	}
 
 	// --> check that the metrics have the expected attributes set
-	writtenSize := gotMetrics["written-size"]
+	writtenSize := gotMetrics["written.size"]
 	writtenSizeSum, ok := writtenSize.Data.(metricdata.Sum[int64])
 	if !ok {
 		t.Errorf("cannot access written size aggregation: %#v", writtenSize.Data)
