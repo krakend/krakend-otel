@@ -61,6 +61,7 @@ func (o *testOTEL) Tracer() trace.Tracer {
 func (o *testOTEL) TracerProvider() trace.TracerProvider {
 	return o.tracerProvider
 }
+
 func (o *testOTEL) MeterProvider() metric.MeterProvider {
 	return o.metricProvider
 }
