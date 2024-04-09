@@ -83,6 +83,7 @@ func NewWithVersion(serviceName string, cfg *OTELStateConfig, version string,
 	var meterProvider metric.MeterProvider = noopmetric.NewMeterProvider()
 	var sdkMeterProvider *sdkmetric.MeterProvider
 	if len(metricOpts) > 0 {
+		metricOpts = append(metricOpts, sdkmetric.WithResource(res))
 		sdkMeterProvider = sdkmetric.NewMeterProvider(metricOpts...)
 		meterProvider = sdkMeterProvider
 	}

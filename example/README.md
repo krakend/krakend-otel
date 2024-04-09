@@ -6,7 +6,7 @@ In the `docker_compose` folder there is the environment to run the observability
 
 ```
 make image
-cd docker-compose && make up
+cd docker_compose && make up
 ```
 
 ## Run local krakend instances and other services in docker compose
