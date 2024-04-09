@@ -9,8 +9,9 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
+
 	// "go.opentelemetry.io/otel/codes"
-	"github.com/krakend/krakend-otel/state"
+
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -21,12 +22,14 @@ import (
 
 type fakeService struct{}
 
-func (s *fakeService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (*fakeService) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte("foo bar"))
 }
 
 type testOTEL struct {
 	tracer         trace.Tracer
+	tracerProvider trace.TracerProvider
+	meter          metric.Meter
 	metricProvider metric.MeterProvider
 
 	metricReader *sdkmetric.ManualReader
@@ -40,8 +43,11 @@ func newTestOTEL() *testOTEL {
 
 	metricReader := sdkmetric.NewManualReader()
 	metricProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(metricReader))
+
 	return &testOTEL{
 		tracer:         tracer,
+		tracerProvider: tracerProvider,
+		meter:          metricProvider.Meter("io.krakend.krakend-otel"),
 		metricProvider: metricProvider,
 		metricReader:   metricReader,
 		spanRecorder:   spanRecorder,
@@ -52,15 +58,23 @@ func (o *testOTEL) Tracer() trace.Tracer {
 	return o.tracer
 }
 
+func (o *testOTEL) TracerProvider() trace.TracerProvider {
+	return o.tracerProvider
+}
+
 func (o *testOTEL) MeterProvider() metric.MeterProvider {
 	return o.metricProvider
 }
 
-func (o *testOTEL) Propagator() propagation.TextMapPropagator {
+func (o *testOTEL) Meter() metric.Meter {
+	return o.meter
+}
+
+func (*testOTEL) Propagator() propagation.TextMapPropagator {
 	return nil
 }
 
-func (o *testOTEL) Shutdown(ctx context.Context) {
+func (*testOTEL) Shutdown(_ context.Context) {
 }
 
 func TestInstrumentedHTTPClient(t *testing.T) {
@@ -70,9 +84,7 @@ func TestInstrumentedHTTPClient(t *testing.T) {
 	innerClient := &http.Client{}
 	otelInstance := newTestOTEL()
 	transportOptions := &TransportOptions{
-		OTELInstance: func() state.OTEL {
-			return otelInstance
-		},
+		OTELInstance: otelInstance,
 		TracesOpts: TransportTracesOptions{
 			RoundTrip:   true,
 			ReadPayload: true,
@@ -89,9 +101,9 @@ func TestInstrumentedHTTPClient(t *testing.T) {
 		},
 	}
 
-	c, err := InstrumentedHTTPClient(innerClient, transportOptions, "test-http-client")
-	if err != nil {
-		t.Errorf("unexpected error %s", err.Error())
+	c := InstrumentedHTTPClient(innerClient, transportOptions, "test-http-client")
+	if c == nil {
+		t.Error("unable to create client")
 		return
 	}
 
@@ -159,14 +171,14 @@ func TestInstrumentedHTTPClient(t *testing.T) {
 		// "requests-failed-count": false // <- we do not have requests that failed
 		// "requests-canceled-count": false // <- we do not have requests cancelled
 		// "requests-timedout-count": false // <- we do not have requests timed out
-		"http.client.request.started.count":       false,
-		"http.client.request.size":                false,
-		"http.client.duration":                    false,
-		"http.client.response.size":               false,
-		"http.client.response.read.size":          false,
-		"http.client.response.read.size.hist":     false,
-		"http.client.response.read.duration":      false,
-		"http.client.response.read.duration.hist": false,
+		"http.client.request.started.count":   false,
+		"http.client.request.size":            false,
+		"http.client.duration":                false,
+		"http.client.response.size":           false,
+		"http.client.response.read.size":      false,
+		"http.client.response.read.size-hist": false,
+		"http.client.response.read.time":      false,
+		"http.client.response.read.time-hist": false,
 		// "reader-errors":    false,
 	}
 	numWantedMetrics := len(wantedMetrics)
@@ -189,7 +201,7 @@ func TestInstrumentedHTTPClient(t *testing.T) {
 	}
 
 	// --> check that the metrics have the expected attributes set
-	readSize := gotMetrics["read-size"]
+	readSize := gotMetrics["http.client.response.read.size"]
 	readSizeSum, ok := readSize.Data.(metricdata.Sum[int64])
 	if !ok {
 		t.Errorf("cannot access read size aggregation: %#v", readSize.Data)

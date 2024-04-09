@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	lconfig "github.com/luraproject/lura/v2/config"
+	"github.com/luraproject/lura/v2/logging"
 )
 
 func TestGlobalConfig(t *testing.T) {
@@ -23,10 +24,11 @@ func TestGlobalConfig(t *testing.T) {
 		},
 	}
 
-	err := Register(context.Background(), cfg)
+	shuftdownFn, err := Register(context.Background(), logging.NoOp, cfg)
 	if err != nil {
 		t.Errorf("unexpected error %s", err.Error())
 	}
+	shuftdownFn()
 }
 
 /*

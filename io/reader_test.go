@@ -43,7 +43,7 @@ func TestReaderHappyPath(t *testing.T) {
 		attribute.Int("http.status_code", 201),
 		attribute.String("url.path", "/this/{matched}/path"),
 	}
-	reader := NewInstrumentedReader(&bw, ctx, attrsT, attrsM, tracer, meter)
+	reader := NewInstrumentedReader("", &bw, ctx, attrsT, attrsM, tracer, meter)
 
 	_, err = io.ReadAll(reader)
 	if err != nil {
@@ -88,10 +88,10 @@ func TestReaderHappyPath(t *testing.T) {
 	// --> check that we have all the metrics we want to report
 	sm := rm.ScopeMetrics[0]
 	wantedMetrics := map[string]bool{
-		"read-size":      false,
-		"read-size-hist": false,
-		"read-time":      false,
-		"read-time-hist": false,
+		"read.size":      false,
+		"read.size-hist": false,
+		"read.time":      false,
+		"read.time-hist": false,
 		// "reader-errors":    false,
 	}
 	numWantedMetrics := len(wantedMetrics)
@@ -107,7 +107,7 @@ func TestReaderHappyPath(t *testing.T) {
 	}
 
 	// --> check that the metrics have the expected attributes set
-	readSize := gotMetrics["read-size"]
+	readSize := gotMetrics["read.size"]
 	readSizeSum, ok := readSize.Data.(metricdata.Sum[int64])
 	if !ok {
 		t.Errorf("cannot access read size aggregation: %#v", readSize.Data)
@@ -157,7 +157,7 @@ func TestReaderTimeout(t *testing.T) {
 		attribute.Int("http.status_code", 201),
 		attribute.String("url.path", "/this/{matched}/path"),
 	}
-	reader := NewInstrumentedReader(innerReader, ctx, attrsT, attrsM, tracer, meter)
+	reader := NewInstrumentedReader("", innerReader, ctx, attrsT, attrsM, tracer, meter)
 
 	fourBytes := make([]byte, 4)
 	_, err = reader.Read(fourBytes)
@@ -214,10 +214,10 @@ func TestReaderTimeout(t *testing.T) {
 	// --> check that we have all the metrics we want to report
 	sm := rm.ScopeMetrics[0]
 	wantedMetrics := map[string]bool{
-		"read-size":      false,
-		"read-size-hist": false,
-		"read-time":      false,
-		"read-time-hist": false,
+		"read.size":      false,
+		"read.size-hist": false,
+		"read.time":      false,
+		"read.time-hist": false,
 		// "reader-errors":    false,
 	}
 	numWantedMetrics := len(wantedMetrics)
@@ -233,7 +233,7 @@ func TestReaderTimeout(t *testing.T) {
 	}
 
 	// --> check that the metrics have the expected attributes set
-	readSize := gotMetrics["read-size"]
+	readSize := gotMetrics["read.size"]
 	readSizeSum, ok := readSize.Data.(metricdata.Sum[int64])
 	if !ok {
 		t.Errorf("cannot access read size aggregation: %#v", readSize.Data)
