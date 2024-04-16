@@ -82,12 +82,14 @@ func (w *TrackingResponseWriter) Flush() {
 func newTrackingResponseWriter(rw http.ResponseWriter, t *tracking, recordHeaders bool,
 	hijackCallback func(net.Conn, error) (net.Conn, error),
 ) *TrackingResponseWriter {
+	flusher, _ := rw.(http.Flusher)
+	hijacker, _ := rw.(http.Hijacker)
 	return &TrackingResponseWriter{
 		track:          t,
 		recordHeaders:  recordHeaders,
 		rw:             rw,
-		flusher:        rw.(http.Flusher),
-		hijacker:       rw.(http.Hijacker),
+		flusher:        flusher,
+		hijacker:       hijacker,
 		hijackCallback: hijackCallback,
 	}
 }

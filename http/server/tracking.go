@@ -50,7 +50,8 @@ func newTracking() *tracking {
 func fromContext(ctx context.Context) *tracking {
 	v := ctx.Value(krakenDContextTrackingStrKey)
 	if v != nil {
-		return v.(*tracking)
+		t, _ := v.(*tracking)
+		return t
 	}
 	return nil
 }
