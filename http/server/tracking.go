@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -28,6 +29,7 @@ type tracking struct {
 	writeErrs       []error
 	endpointPattern string
 	isHijacked      bool
+	staticAttrs     []attribute.KeyValue
 	hijackedErr     error
 }
 
@@ -39,6 +41,10 @@ func (t *tracking) EndpointPattern() string {
 		return "404 Not Found"
 	}
 	return t.endpointPattern
+}
+
+func (t *tracking) StaticAttributes() []attribute.KeyValue {
+	return t.staticAttrs
 }
 
 func newTracking() *tracking {
@@ -61,6 +67,12 @@ func fromContext(ctx context.Context) *tracking {
 func SetEndpointPattern(ctx context.Context, endpointPattern string) {
 	if t := fromContext(ctx); t != nil {
 		t.endpointPattern = endpointPattern
+	}
+}
+
+func SetStaticAttributtes(ctx context.Context, attrs []attribute.KeyValue) {
+	if t := fromContext(ctx); t != nil {
+		t.staticAttrs = attrs
 	}
 }
 

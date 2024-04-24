@@ -114,6 +114,14 @@ func ProxyFactory(pf proxy.Factory) proxy.FactoryFunc {
 			semconv.HTTPRequestMethodKey.String(cfg.Method),
 			semconv.HTTPRoute(urlPattern),
 		}
+
+		// Add configured static attributes
+		for _, kv := range pipeOpts.StaticAttributes {
+			if len(kv.Key) > 0 && len(kv.Value) > 0 {
+				attrs = append(attrs, attribute.String(kv.Key, kv.Value))
+			}
+		}
+
 		return middleware(gs, !pipeOpts.DisableMetrics, !pipeOpts.DisableTraces,
 			"proxy", urlPattern, attrs, pipeOpts.ReportHeaders)(next), nil
 	}

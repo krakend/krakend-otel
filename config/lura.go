@@ -46,3 +46,18 @@ func FromLura(srvCfg luraconfig.ServiceConfig) (*ConfigData, error) {
 	cfg.UnsetFieldsToDefaults()
 	return cfg, nil
 }
+
+func EndpointExtraCfg(endpointExtraCfg luraconfig.ExtraConfig) *ConfigData {
+	cfg := new(ConfigData)
+	tmp, ok := endpointExtraCfg[Namespace]
+	if !ok {
+		return nil
+	}
+	buf := new(bytes.Buffer)
+	json.NewEncoder(buf).Encode(tmp)
+	if err := json.NewDecoder(buf).Decode(cfg); err != nil {
+		return nil
+	}
+
+	return cfg
+}
