@@ -22,15 +22,16 @@ type tracking struct {
 	ctx       context.Context
 	span      trace.Span
 
-	latencyInSecs   float64
-	responseSize    int
-	responseStatus  int
-	responseHeaders map[string][]string
-	writeErrs       []error
-	endpointPattern string
-	isHijacked      bool
-	staticAttrs     []attribute.KeyValue
-	hijackedErr     error
+	latencyInSecs      float64
+	responseSize       int
+	responseStatus     int
+	responseHeaders    map[string][]string
+	writeErrs          []error
+	endpointPattern    string
+	isHijacked         bool
+	metricsStaticAttrs []attribute.KeyValue
+	tracesStaticAttrs  []attribute.KeyValue
+	hijackedErr        error
 }
 
 func (t *tracking) EndpointPattern() string {
@@ -43,8 +44,12 @@ func (t *tracking) EndpointPattern() string {
 	return t.endpointPattern
 }
 
-func (t *tracking) StaticAttributes() []attribute.KeyValue {
-	return t.staticAttrs
+func (t *tracking) MetricsStaticAttributes() []attribute.KeyValue {
+	return t.metricsStaticAttrs
+}
+
+func (t *tracking) TracesStaticAttributes() []attribute.KeyValue {
+	return t.tracesStaticAttrs
 }
 
 func newTracking() *tracking {
@@ -70,9 +75,15 @@ func SetEndpointPattern(ctx context.Context, endpointPattern string) {
 	}
 }
 
-func SetStaticAttributtes(ctx context.Context, attrs []attribute.KeyValue) {
+func SetMetricsStaticAttributtes(ctx context.Context, attrs []attribute.KeyValue) {
 	if t := fromContext(ctx); t != nil {
-		t.staticAttrs = attrs
+		t.metricsStaticAttrs = attrs
+	}
+}
+
+func SetTracesStaticAttributtes(ctx context.Context, attrs []attribute.KeyValue) {
+	if t := fromContext(ctx); t != nil {
+		t.tracesStaticAttrs = attrs
 	}
 }
 

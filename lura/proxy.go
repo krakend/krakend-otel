@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/proxy"
@@ -48,20 +48,21 @@ func metricsAndTracesMiddleware(next proxy.Proxy, mm *middlewareMeter, mt *middl
 // middleware creates a proxy that instruments the proxy it wraps by creating an span if enabled,
 // and report the duration of this stage in metrics if enabled.
 func middleware(gs state.OTEL, metricsEnabled bool, tracesEnabled bool,
-	stageName string, urlPattern string, attrs []attribute.KeyValue, reportHeaders bool,
+	stageName string, urlPattern string, metricsAttrs, tracesAttrs []attribute.KeyValue,
+	reportHeaders bool,
 ) proxy.Middleware {
 	var mt *middlewareTracer
 	var mm *middlewareMeter
 	var err error
 	if metricsEnabled {
-		mm, err = newMiddlewareMeter(gs, stageName, attrs)
+		mm, err = newMiddlewareMeter(gs, stageName, metricsAttrs)
 		if err != nil {
 			// TODO: log the error
 			metricsEnabled = false
 		}
 	}
 	if tracesEnabled {
-		mt = newMiddlewareTracer(gs, urlPattern, stageName, reportHeaders, attrs)
+		mt = newMiddlewareTracer(gs, urlPattern, stageName, reportHeaders, tracesAttrs)
 	}
 
 	return func(next ...proxy.Proxy) proxy.Proxy {
@@ -116,14 +117,22 @@ func ProxyFactory(pf proxy.Factory) proxy.FactoryFunc {
 		}
 
 		// Add configured static attributes
-		for _, kv := range pipeOpts.StaticAttributes {
+		metricsAttrs := attrs
+		tracesAttrs := attrs
+		for _, kv := range pipeOpts.MetricsStaticAttributes {
 			if len(kv.Key) > 0 && len(kv.Value) > 0 {
-				attrs = append(attrs, attribute.String(kv.Key, kv.Value))
+				metricsAttrs = append(metricsAttrs, attribute.String(kv.Key, kv.Value))
+			}
+		}
+
+		for _, kv := range pipeOpts.TracesStaticAttributes {
+			if len(kv.Key) > 0 && len(kv.Value) > 0 {
+				tracesAttrs = append(tracesAttrs, attribute.String(kv.Key, kv.Value))
 			}
 		}
 
 		return middleware(gs, !pipeOpts.DisableMetrics, !pipeOpts.DisableTraces,
-			"proxy", urlPattern, attrs, pipeOpts.ReportHeaders)(next), nil
+			"proxy", urlPattern, metricsAttrs, tracesAttrs, pipeOpts.ReportHeaders)(next), nil
 	}
 }
 
@@ -155,6 +164,6 @@ func BackendFactory(bf proxy.BackendFactory) proxy.BackendFactory {
 			attribute.String("krakend.endpoint.method", cfg.ParentEndpointMethod),
 		}
 		return middleware(gs, !backendOpts.Metrics.DisableStage, !backendOpts.Traces.DisableStage,
-			"backend", urlPattern, attrs, backendOpts.Traces.ReportHeaders)(next)
+			"backend", urlPattern, attrs, attrs, backendOpts.Traces.ReportHeaders)(next)
 	}
 }

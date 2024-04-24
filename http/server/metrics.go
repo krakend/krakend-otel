@@ -36,7 +36,7 @@ func (m *metricsHTTP) report(t *tracking, r *http.Request) {
 	if m == nil || m.latency == nil {
 		return
 	}
-	dynAttrs := t.staticAttrs
+	dynAttrs := t.metricsStaticAttrs
 	dynAttrs = append(dynAttrs, semconv.HTTPRoute(t.EndpointPattern()))
 	dynAttrs = append(dynAttrs, semconv.HTTPRequestMethodKey.String(r.Method))
 	dynAttrs = append(dynAttrs, semconv.HTTPResponseStatusCode(t.responseStatus))
