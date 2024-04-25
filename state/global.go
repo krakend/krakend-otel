@@ -19,6 +19,9 @@ func GlobalState() OTEL {
 	otelStateMutex.RLock()
 	s := otelState
 	otelStateMutex.RUnlock()
+	if s == nil {
+		return nil
+	}
 	return s
 }
 
