@@ -19,9 +19,15 @@ type trackingHandler struct {
 	metrics       *metricsHTTP
 	traces        *tracesHTTP
 	reportHeaders bool
+	config        state.Config
 }
 
 func (h *trackingHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	if r.URL != nil && h.config.SkipEndpoint(r.URL.Path) {
+		h.next.ServeHTTP(rw, r)
+		return
+	}
+
 	t := newTracking()
 	t.ctx = r.Context()
 	if h.prop != nil {
@@ -84,5 +90,6 @@ func NewTrackingHandler(next http.Handler) http.Handler {
 		metrics:       m,
 		traces:        t,
 		reportHeaders: gCfg.ReportHeaders,
+		config:        otelCfg,
 	}
 }
