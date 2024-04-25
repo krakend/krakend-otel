@@ -19,7 +19,7 @@ type trackingHandler struct {
 	metrics       *metricsHTTP
 	traces        *tracesHTTP
 	reportHeaders bool
-	config        *state.Config
+	config        state.Config
 }
 
 func (h *trackingHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
