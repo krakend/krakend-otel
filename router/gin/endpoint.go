@@ -27,8 +27,8 @@ func New(hf krakendgin.HandlerFactory) krakendgin.HandlerFactory {
 		metricsAttrs := []attribute.KeyValue{}
 		tracesAttrs := []attribute.KeyValue{}
 
-		cfgExtra := kotelconfig.EndpointExtraCfg(cfg.ExtraConfig)
-		if cfgExtra != nil && cfgExtra.Layers.Global != nil {
+		cfgExtra, err := kotelconfig.LuraExtraCfg(cfg.ExtraConfig)
+		if err == nil && cfgExtra.Layers.Global != nil {
 			for _, kv := range cfgExtra.Layers.Global.MetricsStaticAttributes {
 				if len(kv.Key) > 0 && len(kv.Value) > 0 {
 					metricsAttrs = append(metricsAttrs, attribute.String(kv.Key, kv.Value))

@@ -1,22 +1,22 @@
 package state
 
 import (
-	luraconfig "github.com/luraproject/lura/v2/config"
-
 	"github.com/krakend/krakend-otel/config"
+	kotelconfig "github.com/krakend/krakend-otel/config"
+	luraconfig "github.com/luraproject/lura/v2/config"
 )
 
 type Config interface {
 	OTEL() OTEL
-	GlobalOpts() *config.GlobalOpts
+	GlobalOpts() config.GlobalOpts
 
 	// Gets the OTEL instance for a given endpoint
 	EndpointOTEL(cfg *luraconfig.EndpointConfig) OTEL
-	EndpointPipeOpts(cfg *luraconfig.EndpointConfig) *config.PipeOpts
-	EndpointBackendOpts(cfg *luraconfig.Backend) *config.BackendOpts
+	EndpointPipeOpts(cfg *luraconfig.EndpointConfig) config.PipeOpts
+	EndpointBackendOpts(cfg *luraconfig.Backend) config.BackendOpts
 
 	BackendOTEL(cfg *luraconfig.Backend) OTEL
-	BackendOpts(cfg *luraconfig.Backend) *config.BackendOpts
+	BackendOpts(cfg *luraconfig.Backend) config.BackendOpts
 
 	// SkipEndpoint tells if an endpoint should not be instrumented
 	SkipEndpoint(endpoint string) bool
@@ -32,28 +32,65 @@ func (*StateConfig) OTEL() OTEL {
 	return GlobalState()
 }
 
-func (s *StateConfig) GlobalOpts() *config.GlobalOpts {
-	return s.cfgData.Layers.Global
+func (s *StateConfig) GlobalOpts() config.GlobalOpts {
+	return *s.cfgData.Layers.Global
 }
 
 func (*StateConfig) EndpointOTEL(_ *luraconfig.EndpointConfig) OTEL {
 	return GlobalState()
 }
 
-func (s *StateConfig) EndpointPipeOpts(_ *luraconfig.EndpointConfig) *config.PipeOpts {
-	return s.cfgData.Layers.Pipe
+func (s *StateConfig) EndpointPipeOpts(cfg *luraconfig.EndpointConfig) config.PipeOpts {
+	PipeOpts := *s.cfgData.Layers.Pipe
+	cfgExtra, err := kotelconfig.LuraExtraCfg(cfg.ExtraConfig)
+	if err == nil && cfgExtra.Layers.Pipe != nil {
+		PipeOpts.MetricsStaticAttributes = append(
+			PipeOpts.MetricsStaticAttributes,
+			cfgExtra.Layers.Global.MetricsStaticAttributes...,
+		)
+
+		PipeOpts.TracesStaticAttributes = append(
+			PipeOpts.TracesStaticAttributes,
+			cfgExtra.Layers.Global.TracesStaticAttributes...,
+		)
+	}
+
+	return PipeOpts
 }
 
-func (s *StateConfig) EndpointBackendOpts(_ *luraconfig.Backend) *config.BackendOpts {
-	return s.cfgData.Layers.Backend
+func (s *StateConfig) EndpointBackendOpts(cfg *luraconfig.Backend) config.BackendOpts {
+	return mergedBackendOpts(s, cfg)
 }
 
 func (*StateConfig) BackendOTEL(_ *luraconfig.Backend) OTEL {
 	return GlobalState()
 }
 
-func (s *StateConfig) BackendOpts(_ *luraconfig.Backend) *config.BackendOpts {
-	return s.cfgData.Layers.Backend
+func (s *StateConfig) BackendOpts(cfg *luraconfig.Backend) config.BackendOpts {
+	return mergedBackendOpts(s, cfg)
+}
+
+func mergedBackendOpts(s *StateConfig, cfg *luraconfig.Backend) config.BackendOpts {
+	BackendOpts := *s.cfgData.Layers.Backend
+
+	cfgExtra, err := kotelconfig.LuraExtraCfg(cfg.ExtraConfig)
+	if err == nil && cfgExtra.Layers.Backend != nil {
+		if cfgExtra.Layers.Backend.Metrics != nil {
+			BackendOpts.Metrics.StaticAttributes = append(
+				BackendOpts.Metrics.StaticAttributes,
+				cfgExtra.Layers.Backend.Metrics.StaticAttributes...,
+			)
+		}
+
+		if cfgExtra.Layers.Backend.Traces != nil {
+			BackendOpts.Traces.StaticAttributes = append(
+				BackendOpts.Traces.StaticAttributes,
+				cfgExtra.Layers.Backend.Traces.StaticAttributes...,
+			)
+		}
+	}
+
+	return BackendOpts
 }
 
 func (s *StateConfig) SkipEndpoint(endpoint string) bool {

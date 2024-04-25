@@ -163,7 +163,23 @@ func BackendFactory(bf proxy.BackendFactory) proxy.BackendFactory {
 			attribute.String("krakend.endpoint.route", parentEndpoint),
 			attribute.String("krakend.endpoint.method", cfg.ParentEndpointMethod),
 		}
+
+		// Add configured static attributes
+		metricsAttrs := attrs
+		tracesAttrs := attrs
+		for _, kv := range backendOpts.Metrics.StaticAttributes {
+			if len(kv.Key) > 0 && len(kv.Value) > 0 {
+				metricsAttrs = append(metricsAttrs, attribute.String(kv.Key, kv.Value))
+			}
+		}
+
+		for _, kv := range backendOpts.Traces.StaticAttributes {
+			if len(kv.Key) > 0 && len(kv.Value) > 0 {
+				tracesAttrs = append(tracesAttrs, attribute.String(kv.Key, kv.Value))
+			}
+		}
+
 		return middleware(gs, !backendOpts.Metrics.DisableStage, !backendOpts.Traces.DisableStage,
-			"backend", urlPattern, attrs, attrs, backendOpts.Traces.ReportHeaders)(next)
+			"backend", urlPattern, metricsAttrs, tracesAttrs, backendOpts.Traces.ReportHeaders)(next)
 	}
 }
