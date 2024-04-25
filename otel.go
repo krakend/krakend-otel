@@ -78,7 +78,7 @@ func RegisterGlobalInstance(ctx context.Context, l logging.Logger,
 		// TODO: we might want to "throtle" the error reporting
 		// when we have repeated messagese when a OTLP backend is
 		// down.
-		l.Error("[SERVICE OpenTelemetry] " + e.Error())
+		l.Error("[SERVICE: OpenTelemetry] " + e.Error())
 	}))
 
 	globalStateCfg := &state.OTELStateConfig{
