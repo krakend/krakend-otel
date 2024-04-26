@@ -41,6 +41,8 @@ func FromLura(srvCfg luraconfig.ServiceConfig) (*ConfigData, error) {
 	return cfg, nil
 }
 
+// LuraExtraCfg extracts the extra config field for the namespace if
+// provided
 func LuraExtraCfg(extraCfg luraconfig.ExtraConfig) (*ConfigData, error) {
 	tmp, ok := extraCfg[Namespace]
 	if !ok {

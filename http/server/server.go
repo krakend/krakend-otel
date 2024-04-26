@@ -72,29 +72,27 @@ func NewTrackingHandler(next http.Handler) http.Handler {
 		prop = s.Propagator()
 	}
 
-	// Add configured static attributes
-	metricsAttrs := []attribute.KeyValue{}
-	tracesAttrs := []attribute.KeyValue{}
-	for _, kv := range gCfg.MetricsStaticAttributes {
-		if len(kv.Key) > 0 && len(kv.Value) > 0 {
-			metricsAttrs = append(metricsAttrs, attribute.String(kv.Key, kv.Value))
-		}
-	}
-
-	for _, kv := range gCfg.TracesStaticAttributes {
-		if len(kv.Key) > 0 && len(kv.Value) > 0 {
-			tracesAttrs = append(tracesAttrs, attribute.String(kv.Key, kv.Value))
-		}
-	}
-
 	var m *metricsHTTP
 	if !gCfg.DisableMetrics {
+		var metricsAttrs []attribute.KeyValue
+		for _, kv := range gCfg.MetricsStaticAttributes {
+			if len(kv.Key) > 0 && len(kv.Value) > 0 {
+				metricsAttrs = append(metricsAttrs, attribute.String(kv.Key, kv.Value))
+			}
+		}
+
 		m = newMetricsHTTP(s.Meter(), metricsAttrs)
 	}
 
 	var t *tracesHTTP
 	if !gCfg.DisableTraces {
-		tracesAttrs = append(tracesAttrs, attribute.String("krakend.stage", "global"))
+		tracesAttrs := []attribute.KeyValue{attribute.String("krakend.stage", "global")}
+		for _, kv := range gCfg.TracesStaticAttributes {
+			if len(kv.Key) > 0 && len(kv.Value) > 0 {
+				tracesAttrs = append(tracesAttrs, attribute.String(kv.Key, kv.Value))
+			}
+		}
+
 		t = newTracesHTTP(s.Tracer(), tracesAttrs, gCfg.ReportHeaders)
 	}
 

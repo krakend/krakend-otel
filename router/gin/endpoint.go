@@ -24,8 +24,8 @@ func New(hf krakendgin.HandlerFactory) krakendgin.HandlerFactory {
 		}
 		urlPattern := kotelconfig.NormalizeURLPattern(cfg.Endpoint)
 		next := hf(cfg, p)
-		metricsAttrs := []attribute.KeyValue{}
-		tracesAttrs := []attribute.KeyValue{}
+		var metricsAttrs []attribute.KeyValue
+		var tracesAttrs []attribute.KeyValue
 
 		cfgExtra, err := kotelconfig.LuraExtraCfg(cfg.ExtraConfig)
 		if err == nil && cfgExtra.Layers.Global != nil {
@@ -47,8 +47,7 @@ func New(hf krakendgin.HandlerFactory) krakendgin.HandlerFactory {
 			// context by the outer http layer, so it can be reported
 			// in metrics and traces.
 			kotelserver.SetEndpointPattern(c.Request.Context(), urlPattern)
-			kotelserver.SetMetricsStaticAttributtes(c.Request.Context(), metricsAttrs)
-			kotelserver.SetTracesStaticAttributtes(c.Request.Context(), tracesAttrs)
+			kotelserver.SetStaticAttributtes(c.Request.Context(), metricsAttrs, tracesAttrs)
 			next(c)
 		}
 	}

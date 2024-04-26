@@ -75,15 +75,12 @@ func SetEndpointPattern(ctx context.Context, endpointPattern string) {
 	}
 }
 
-func SetMetricsStaticAttributtes(ctx context.Context, attrs []attribute.KeyValue) {
+// SetStaticAttributtes allows to set metrics and traces static attributes in
+// the request context
+func SetStaticAttributtes(ctx context.Context, metricAttrs, tracesAttrs []attribute.KeyValue) {
 	if t := fromContext(ctx); t != nil {
-		t.metricsStaticAttrs = attrs
-	}
-}
-
-func SetTracesStaticAttributtes(ctx context.Context, attrs []attribute.KeyValue) {
-	if t := fromContext(ctx); t != nil {
-		t.tracesStaticAttrs = attrs
+		t.metricsStaticAttrs = metricAttrs
+		t.tracesStaticAttrs = tracesAttrs
 	}
 }
 

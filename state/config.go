@@ -2,7 +2,6 @@ package state
 
 import (
 	"github.com/krakend/krakend-otel/config"
-	kotelconfig "github.com/krakend/krakend-otel/config"
 	luraconfig "github.com/luraproject/lura/v2/config"
 )
 
@@ -42,16 +41,16 @@ func (*StateConfig) EndpointOTEL(_ *luraconfig.EndpointConfig) OTEL {
 
 func (s *StateConfig) EndpointPipeOpts(cfg *luraconfig.EndpointConfig) config.PipeOpts {
 	PipeOpts := *s.cfgData.Layers.Pipe
-	cfgExtra, err := kotelconfig.LuraExtraCfg(cfg.ExtraConfig)
+	cfgExtra, err := config.LuraExtraCfg(cfg.ExtraConfig)
 	if err == nil && cfgExtra.Layers.Pipe != nil {
 		PipeOpts.MetricsStaticAttributes = append(
 			PipeOpts.MetricsStaticAttributes,
-			cfgExtra.Layers.Global.MetricsStaticAttributes...,
+			cfgExtra.Layers.Pipe.MetricsStaticAttributes...,
 		)
 
 		PipeOpts.TracesStaticAttributes = append(
 			PipeOpts.TracesStaticAttributes,
-			cfgExtra.Layers.Global.TracesStaticAttributes...,
+			cfgExtra.Layers.Pipe.TracesStaticAttributes...,
 		)
 	}
 
@@ -73,7 +72,7 @@ func (s *StateConfig) BackendOpts(cfg *luraconfig.Backend) config.BackendOpts {
 func mergedBackendOpts(s *StateConfig, cfg *luraconfig.Backend) config.BackendOpts {
 	BackendOpts := *s.cfgData.Layers.Backend
 
-	cfgExtra, err := kotelconfig.LuraExtraCfg(cfg.ExtraConfig)
+	cfgExtra, err := config.LuraExtraCfg(cfg.ExtraConfig)
 	if err == nil && cfgExtra.Layers.Backend != nil {
 		if cfgExtra.Layers.Backend.Metrics != nil {
 			BackendOpts.Metrics.StaticAttributes = append(
