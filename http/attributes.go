@@ -1,6 +1,8 @@
 package http
 
 import (
+	"context"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"net/http"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -42,4 +44,34 @@ func TraceResponseAttrs(resp *http.Response) []attribute.KeyValue {
 		semconv.HTTPResponseStatusCode(int(resp.StatusCode)),
 		semconv.HTTPResponseBodySize(int(resp.ContentLength)),
 	}
+}
+
+type customLabelerType int
+
+const customLabelerKey customLabelerType = 0
+
+// Labeler For a server plugin wanting to add custom metric attributes
+func Labeler(ctx context.Context) (*otelhttp.Labeler, bool) {
+	l, ok := ctx.Value(customLabelerKey).(*otelhttp.Labeler)
+	if !ok {
+		l = &otelhttp.Labeler{}
+	}
+	return l, ok
+}
+
+// InjectLabeler Set up the labeler in the context
+func InjectLabeler(ctx context.Context) context.Context {
+	labeler, found := Labeler(ctx)
+
+	if !found {
+		ctx = context.WithValue(ctx, customLabelerKey, labeler)
+	}
+
+	return ctx
+}
+
+// CustomMetricAttributes Get custom attributes set up for this request
+func CustomMetricAttributes(r *http.Request) []attribute.KeyValue {
+	labeler, _ := Labeler(r.Context())
+	return labeler.Get()
 }

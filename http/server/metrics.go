@@ -1,11 +1,11 @@
 package server
 
 import (
-	"net/http"
-
+	otelhttp "github.com/krakend/krakend-otel/http"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/semconv/v1.21.0"
+	"net/http"
 
 	kotelconfig "github.com/krakend/krakend-otel/config"
 )
@@ -36,11 +36,16 @@ func (m *metricsHTTP) report(t *tracking, r *http.Request) {
 	if m == nil || m.latency == nil {
 		return
 	}
+
 	dynAttrsOpts := metric.WithAttributes(
-		semconv.HTTPRoute(t.EndpointPattern()),
-		semconv.HTTPRequestMethodKey.String(r.Method),
-		semconv.HTTPResponseStatusCode(t.responseStatus),
+		append(
+			otelhttp.CustomMetricAttributes(r),
+			semconv.HTTPRoute(t.EndpointPattern()),
+			semconv.HTTPRequestMethodKey.String(r.Method),
+			semconv.HTTPResponseStatusCode(t.responseStatus),
+		)...,
 	)
+
 	m.latency.Record(t.ctx, t.latencyInSecs, m.fixedAttrsOpts, dynAttrsOpts)
 	m.size.Record(t.ctx, int64(t.responseSize), m.fixedAttrsOpts, dynAttrsOpts)
 }

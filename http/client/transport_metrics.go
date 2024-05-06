@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	kotelconfig "github.com/krakend/krakend-otel/config"
+	otelhttp "github.com/krakend/krakend-otel/http"
 )
 
 // TransportMetricsOptions contains the options to enable / disable
@@ -86,7 +87,9 @@ func (m *transportMetrics) report(rtt *roundTripTracking, attrs []attribute.KeyV
 		return
 	}
 
-	attrM := make([]attribute.KeyValue, len(attrs), len(attrs)+4)
+	customAttributes := otelhttp.CustomMetricAttributes(rtt.req)
+	attrM := make([]attribute.KeyValue, len(attrs), len(attrs)+4+len(customAttributes))
+
 	copy(attrM, attrs)
 	if len(m.clientName) > 0 {
 		attrM = append(attrM, attribute.Key("clientname").String(m.clientName))
@@ -94,6 +97,7 @@ func (m *transportMetrics) report(rtt *roundTripTracking, attrs []attribute.KeyV
 	attrM = append(attrM, semconv.HTTPRequestMethodKey.String(rtt.req.Method))
 	attrM = append(attrM, semconv.ServerAddress(rtt.req.RemoteAddr))
 
+	attrM = append(attrM, customAttributes...)
 	statusCode := 0
 	if rtt.err == nil {
 		// if we fail on the client side, we do not have a status code, but we

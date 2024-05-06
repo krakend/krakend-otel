@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	otelhttp "github.com/krakend/krakend-otel/http"
 	"net"
 	"net/http"
 
@@ -37,6 +38,7 @@ func (h *trackingHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 	t.ctx = context.WithValue(t.ctx, krakenDContextTrackingStrKey, t)
+	t.ctx = otelhttp.InjectLabeler(t.ctx)
 	r = r.WithContext(t.ctx)
 
 	if h.metrics != nil || h.traces != nil {
