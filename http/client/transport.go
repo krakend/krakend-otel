@@ -134,7 +134,7 @@ func newTransport(base http.RoundTripper, metricsOpts TransportMetricsOptions,
 		otelState:     otelState,
 		tracesOpts:    tracesOpts,
 		metricsOpts:   metricsOpts,
-		metrics:       newTransportMetrics(&metricsOpts, meter, clientName),
+		metrics:       newTransportMetrics(&metricsOpts, meter),
 		traces:        newTransportTraces(&tracesOpts, tracer, clientName),
 		readerWrapper: readWrapperBuilder(&metricsOpts, &tracesOpts, meter, tracer),
 	}

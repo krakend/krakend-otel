@@ -57,7 +57,7 @@ type transportMetrics struct {
 	clientName string
 }
 
-func newTransportMetrics(metricsOpts *TransportMetricsOptions, meter metric.Meter, clientName string) *transportMetrics {
+func newTransportMetrics(metricsOpts *TransportMetricsOptions, meter metric.Meter) *transportMetrics {
 	if meter == nil {
 		return nil
 	}

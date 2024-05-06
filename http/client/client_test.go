@@ -226,32 +226,9 @@ func TestInstrumentedHTTPClient(t *testing.T) {
 }
 
 func TestCustomLabels(t *testing.T) {
-	svc := &fakeService{}
-	server := httptest.NewServer(svc)
+	server, otelInstance, c, done := setupTestEnvironment(t)
 
-	innerClient := &http.Client{}
-	otelInstance := newTestOTEL()
-	transportOptions := &TransportOptions{
-		OTELInstance: otelInstance,
-		TracesOpts: TransportTracesOptions{
-			RoundTrip:   true,
-			ReadPayload: true,
-			FixedAttributes: []attribute.KeyValue{
-				attribute.String("test-trace-attr", "a_trace"),
-			},
-		},
-		MetricsOpts: TransportMetricsOptions{
-			RoundTrip:   true,
-			ReadPayload: true,
-			FixedAttributes: []attribute.KeyValue{
-				attribute.String("test-metric-attr", "a_metric"),
-			},
-		},
-	}
-
-	c := InstrumentedHTTPClient(innerClient, transportOptions, "test-http-client")
-	if c == nil {
-		t.Error("unable to create client")
+	if done {
 		return
 	}
 
@@ -333,6 +310,42 @@ func TestCustomLabels(t *testing.T) {
 		}
 	}
 
+	verifyCustomAttributesOnMetrics(t, gotMetrics)
+}
+
+func setupTestEnvironment(t *testing.T) (*httptest.Server, *testOTEL, *http.Client, bool) {
+	svc := &fakeService{}
+	server := httptest.NewServer(svc)
+
+	innerClient := &http.Client{}
+	otelInstance := newTestOTEL()
+	transportOptions := &TransportOptions{
+		OTELInstance: otelInstance,
+		TracesOpts: TransportTracesOptions{
+			RoundTrip:   true,
+			ReadPayload: true,
+			FixedAttributes: []attribute.KeyValue{
+				attribute.String("test-trace-attr", "a_trace"),
+			},
+		},
+		MetricsOpts: TransportMetricsOptions{
+			RoundTrip:   true,
+			ReadPayload: true,
+			FixedAttributes: []attribute.KeyValue{
+				attribute.String("test-metric-attr", "a_metric"),
+			},
+		},
+	}
+
+	c := InstrumentedHTTPClient(innerClient, transportOptions, "test-http-client")
+	if c == nil {
+		t.Error("unable to create client")
+		return nil, nil, nil, true
+	}
+	return server, otelInstance, c, false
+}
+
+func verifyCustomAttributesOnMetrics(t *testing.T, gotMetrics map[string]metricdata.Metrics) {
 	readSize := gotMetrics["http.client.request.started.count"]
 	readSizeSum, ok := readSize.Data.(metricdata.Sum[int64])
 	if !ok {
