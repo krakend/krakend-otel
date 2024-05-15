@@ -5,6 +5,7 @@ import (
 	luraconfig "github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/proxy"
 	krakendgin "github.com/luraproject/lura/v2/router/gin"
+	"go.opentelemetry.io/otel/attribute"
 
 	kotelconfig "github.com/krakend/krakend-otel/config"
 	kotelserver "github.com/krakend/krakend-otel/http/server"
@@ -23,11 +24,30 @@ func New(hf krakendgin.HandlerFactory) krakendgin.HandlerFactory {
 		}
 		urlPattern := kotelconfig.NormalizeURLPattern(cfg.Endpoint)
 		next := hf(cfg, p)
+		var metricsAttrs []attribute.KeyValue
+		var tracesAttrs []attribute.KeyValue
+
+		cfgExtra, err := kotelconfig.LuraExtraCfg(cfg.ExtraConfig)
+		if err == nil && cfgExtra.Layers.Global != nil {
+			for _, kv := range cfgExtra.Layers.Global.MetricsStaticAttributes {
+				if len(kv.Key) > 0 && len(kv.Value) > 0 {
+					metricsAttrs = append(metricsAttrs, attribute.String(kv.Key, kv.Value))
+				}
+			}
+
+			for _, kv := range cfgExtra.Layers.Global.TracesStaticAttributes {
+				if len(kv.Key) > 0 && len(kv.Value) > 0 {
+					tracesAttrs = append(tracesAttrs, attribute.String(kv.Key, kv.Value))
+				}
+			}
+		}
+
 		return func(c *gin.Context) {
 			// we set the matched route to a data struct stored in the
 			// context by the outer http layer, so it can be reported
 			// in metrics and traces.
 			kotelserver.SetEndpointPattern(c.Request.Context(), urlPattern)
+			kotelserver.SetStaticAttributtes(c.Request.Context(), metricsAttrs, tracesAttrs)
 			next(c)
 		}
 	}

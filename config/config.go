@@ -138,18 +138,22 @@ type LayersOpts struct {
 // We can select if we want to disable the metrics,
 // the traces, and / or the trace propagation.
 type GlobalOpts struct {
-	DisableMetrics     bool `json:"disable_metrics"`
-	DisableTraces      bool `json:"disable_traces"`
-	DisablePropagation bool `json:"disable_propagation"`
-	ReportHeaders      bool `json:"report_headers"`
+	DisableMetrics          bool       `json:"disable_metrics"`
+	DisableTraces           bool       `json:"disable_traces"`
+	DisablePropagation      bool       `json:"disable_propagation"`
+	ReportHeaders           bool       `json:"report_headers"`
+	MetricsStaticAttributes Attributes `json:"metrics_static_attributes"`
+	TracesStaticAttributes  Attributes `json:"traces_static_attributes"`
 }
 
 // PipeOpts has the options for the KrakenD pipe stage
 // to disable metrics and traces.
 type PipeOpts struct {
-	DisableMetrics bool `json:"disable_metrics"`
-	DisableTraces  bool `json:"disable_traces"`
-	ReportHeaders  bool `json:"report_headers"`
+	DisableMetrics          bool       `json:"disable_metrics"`
+	DisableTraces           bool       `json:"disable_traces"`
+	ReportHeaders           bool       `json:"report_headers"`
+	MetricsStaticAttributes Attributes `json:"metrics_static_attributes"`
+	TracesStaticAttributes  Attributes `json:"traces_static_attributes"`
 }
 
 // Enabled returns if either metrics or traces are enabled

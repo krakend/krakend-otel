@@ -24,14 +24,8 @@ var ErrNoConfig = errors.New("no config found for opentelemetry")
 // In case no "Layers" config is provided, a set of defaults with
 // everything enabled will be used.
 func FromLura(srvCfg luraconfig.ServiceConfig) (*ConfigData, error) {
-	cfg := new(ConfigData)
-	tmp, ok := srvCfg.ExtraConfig[Namespace]
-	if !ok {
-		return nil, ErrNoConfig
-	}
-	buf := new(bytes.Buffer)
-	json.NewEncoder(buf).Encode(tmp)
-	if err := json.NewDecoder(buf).Decode(cfg); err != nil {
+	cfg, err := LuraExtraCfg(srvCfg.ExtraConfig)
+	if err != nil {
 		return nil, err
 	}
 
@@ -44,5 +38,26 @@ func FromLura(srvCfg luraconfig.ServiceConfig) (*ConfigData, error) {
 	}
 
 	cfg.UnsetFieldsToDefaults()
+	return cfg, nil
+}
+
+// LuraExtraCfg extracts the extra config field for the namespace if
+// provided
+func LuraExtraCfg(extraCfg luraconfig.ExtraConfig) (*ConfigData, error) {
+	tmp, ok := extraCfg[Namespace]
+	if !ok {
+		return nil, ErrNoConfig
+	}
+
+	buf := new(bytes.Buffer)
+	if err := json.NewEncoder(buf).Encode(tmp); err != nil {
+		return nil, err
+	}
+
+	cfg := new(ConfigData)
+	if err := json.NewDecoder(buf).Decode(cfg); err != nil {
+		return nil, err
+	}
+
 	return cfg, nil
 }
