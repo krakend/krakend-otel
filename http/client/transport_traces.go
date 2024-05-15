@@ -101,6 +101,12 @@ func (t *transportTraces) end(rtt *roundTripTracking) {
 		}
 		rtt.span.SetAttributes(respAttrs...)
 		rtt.span.SetAttributes(attribute.Float64("response-duration", rtt.latencyInSecs))
+
+		traceStateString := trace.SpanContextFromContext(rtt.req.Context()).TraceState().String()
+		if len(traceStateString) > 0 {
+			rtt.span.SetAttributes(attribute.String("tracestate", traceStateString))
+		}
+
 		if t.detailedConnection {
 			rtt.span.SetAttributes(
 				attribute.Float64("get-conn-duration", rtt.getConnLatency),
