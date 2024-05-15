@@ -61,13 +61,13 @@ func httpExporterWithOptions(ctx context.Context, cfg config.OTLPExporter,
 	tOpts = append(tOpts, otlptracehttp.WithEndpoint(endpoint))
 	exporter, err := otlptracehttp.New(ctx, tOpts...)
 	if err != nil {
-		return nil, errors.New("cannot create http trace exporter")
+		return nil, errors.New("cannot create http trace exporter:" + err.Error())
 	}
 
 	mOpts = append(mOpts, otlpmetrichttp.WithEndpoint(endpoint))
 	metricExporter, err := otlpmetrichttp.New(ctx, mOpts...)
 	if err != nil {
-		return nil, errors.New("cannot create http metric exporter")
+		return nil, errors.New("cannot create http metric exporter:" + err.Error())
 	}
 
 	return &OtelCollector{

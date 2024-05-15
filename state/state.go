@@ -131,14 +131,23 @@ func (s *OTELState) Tracer() trace.Tracer {
 
 // Meter returns a meter to create metric instruments.
 func (s *OTELState) Meter() metric.Meter {
+	if s == nil {
+		return nil
+	}
 	return s.meter
 }
 
 func (s *OTELState) MeterProvider() metric.MeterProvider {
+	if s == nil {
+		return nil
+	}
 	return s.meterProvider
 }
 
 func (s *OTELState) TracerProvider() trace.TracerProvider {
+	if s == nil {
+		return nil
+	}
 	return s.tracerProvider
 }
 
@@ -153,6 +162,9 @@ func (s *OTELState) Propagator() propagation.TextMapPropagator {
 // Shutdown performs the clean shutdown to be able to
 // flush pending traces and / or metrics.
 func (s *OTELState) Shutdown(ctx context.Context) {
+	if s == nil {
+		return
+	}
 	if s.sdkTracerProvider != nil {
 		s.sdkTracerProvider.Shutdown(ctx)
 	}
