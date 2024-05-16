@@ -217,7 +217,7 @@ func makeOverrideTraceAttr() []config.KeyValue {
 
 func makeStaticAttr(key, value string) []config.KeyValue {
 	return []config.KeyValue{
-		config.KeyValue{
+		{
 			Key:   key,
 			Value: value,
 		},
