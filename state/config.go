@@ -48,7 +48,7 @@ func (s *StateConfig) EndpointPipeOpts(cfg *luraconfig.EndpointConfig) *config.P
 	}
 
 	cfgExtra, err := config.LuraExtraCfg(cfg.ExtraConfig)
-	if err != nil || cfgExtra == nil || cfgExtra.Layers == nil {
+	if err == nil && cfgExtra != nil && cfgExtra.Layers != nil {
 		extraPOpts = cfgExtra.Layers.Pipe
 	}
 
@@ -98,7 +98,7 @@ func mergedBackendOpts(s *StateConfig, cfg *luraconfig.Backend) *config.BackendO
 	}
 
 	cfgExtra, err := config.LuraExtraCfg(cfg.ExtraConfig)
-	if err == nil || cfgExtra != nil || cfgExtra.Layers != nil {
+	if err == nil && cfgExtra != nil && cfgExtra.Layers != nil {
 		extraBOpts = cfgExtra.Layers.Backend
 	}
 
