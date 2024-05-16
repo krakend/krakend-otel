@@ -63,6 +63,10 @@ func middleware(gs state.OTEL, metricsEnabled bool, tracesEnabled bool,
 	}
 	if tracesEnabled {
 		mt = newMiddlewareTracer(gs, urlPattern, stageName, reportHeaders, tracesAttrs)
+		if mt == nil {
+			// TODO: log the error
+			tracesEnabled = false
+		}
 	}
 
 	return func(next ...proxy.Proxy) proxy.Proxy {

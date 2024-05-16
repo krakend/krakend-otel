@@ -126,6 +126,9 @@ func NewWithVersion(serviceName string, cfg *OTELStateConfig, version string,
 
 // Tracer returns a tracer to start a span.
 func (s *OTELState) Tracer() trace.Tracer {
+	if s == nil {
+		return nil
+	}
 	return s.tracer
 }
 

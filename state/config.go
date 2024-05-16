@@ -7,15 +7,15 @@ import (
 
 type Config interface {
 	OTEL() OTEL
-	GlobalOpts() config.GlobalOpts
+	GlobalOpts() *config.GlobalOpts
 
 	// Gets the OTEL instance for a given endpoint
 	EndpointOTEL(cfg *luraconfig.EndpointConfig) OTEL
-	EndpointPipeOpts(cfg *luraconfig.EndpointConfig) config.PipeOpts
-	EndpointBackendOpts(cfg *luraconfig.Backend) config.BackendOpts
+	EndpointPipeOpts(cfg *luraconfig.EndpointConfig) *config.PipeOpts
+	EndpointBackendOpts(cfg *luraconfig.Backend) *config.BackendOpts
 
 	BackendOTEL(cfg *luraconfig.Backend) OTEL
-	BackendOpts(cfg *luraconfig.Backend) config.BackendOpts
+	BackendOpts(cfg *luraconfig.Backend) *config.BackendOpts
 
 	// SkipEndpoint tells if an endpoint should not be instrumented
 	SkipEndpoint(endpoint string) bool
@@ -31,33 +31,53 @@ func (*StateConfig) OTEL() OTEL {
 	return GlobalState()
 }
 
-func (s *StateConfig) GlobalOpts() config.GlobalOpts {
-	return *s.cfgData.Layers.Global
+func (s *StateConfig) GlobalOpts() *config.GlobalOpts {
+	return s.cfgData.Layers.Global
 }
 
 func (*StateConfig) EndpointOTEL(_ *luraconfig.EndpointConfig) OTEL {
 	return GlobalState()
 }
 
-func (s *StateConfig) EndpointPipeOpts(cfg *luraconfig.EndpointConfig) config.PipeOpts {
-	PipeOpts := *s.cfgData.Layers.Pipe
-	cfgExtra, err := config.LuraExtraCfg(cfg.ExtraConfig)
-	if err == nil && cfgExtra.Layers.Pipe != nil {
-		PipeOpts.MetricsStaticAttributes = append(
-			PipeOpts.MetricsStaticAttributes,
-			cfgExtra.Layers.Pipe.MetricsStaticAttributes...,
-		)
+func (s *StateConfig) EndpointPipeOpts(cfg *luraconfig.EndpointConfig) *config.PipeOpts {
+	var sOpts *config.PipeOpts
+	var extraPOpts *config.PipeOpts
 
-		PipeOpts.TracesStaticAttributes = append(
-			PipeOpts.TracesStaticAttributes,
-			cfgExtra.Layers.Pipe.TracesStaticAttributes...,
-		)
+	if s != nil && s.cfgData.Layers != nil {
+		sOpts = s.cfgData.Layers.Pipe
 	}
 
-	return PipeOpts
+	cfgExtra, err := config.LuraExtraCfg(cfg.ExtraConfig)
+	if err != nil || cfgExtra == nil || cfgExtra.Layers == nil {
+		extraPOpts = cfgExtra.Layers.Pipe
+	}
+
+	if extraPOpts == nil {
+		if sOpts == nil {
+			return new(config.PipeOpts)
+		}
+		return sOpts
+	} else if sOpts == nil {
+		return extraPOpts
+	}
+
+	pOpts := new(config.PipeOpts)
+	*pOpts = *sOpts
+
+	pOpts.MetricsStaticAttributes = append(
+		pOpts.MetricsStaticAttributes,
+		cfgExtra.Layers.Pipe.MetricsStaticAttributes...,
+	)
+
+	pOpts.TracesStaticAttributes = append(
+		pOpts.TracesStaticAttributes,
+		cfgExtra.Layers.Pipe.TracesStaticAttributes...,
+	)
+
+	return pOpts
 }
 
-func (s *StateConfig) EndpointBackendOpts(cfg *luraconfig.Backend) config.BackendOpts {
+func (s *StateConfig) EndpointBackendOpts(cfg *luraconfig.Backend) *config.BackendOpts {
 	return mergedBackendOpts(s, cfg)
 }
 
@@ -65,31 +85,50 @@ func (*StateConfig) BackendOTEL(_ *luraconfig.Backend) OTEL {
 	return GlobalState()
 }
 
-func (s *StateConfig) BackendOpts(cfg *luraconfig.Backend) config.BackendOpts {
+func (s *StateConfig) BackendOpts(cfg *luraconfig.Backend) *config.BackendOpts {
 	return mergedBackendOpts(s, cfg)
 }
 
-func mergedBackendOpts(s *StateConfig, cfg *luraconfig.Backend) config.BackendOpts {
-	BackendOpts := *s.cfgData.Layers.Backend
+func mergedBackendOpts(s *StateConfig, cfg *luraconfig.Backend) *config.BackendOpts {
+	var extraBOpts *config.BackendOpts
+	var sOpts *config.BackendOpts
 
-	cfgExtra, err := config.LuraExtraCfg(cfg.ExtraConfig)
-	if err == nil && cfgExtra.Layers.Backend != nil {
-		if cfgExtra.Layers.Backend.Metrics != nil {
-			BackendOpts.Metrics.StaticAttributes = append(
-				BackendOpts.Metrics.StaticAttributes,
-				cfgExtra.Layers.Backend.Metrics.StaticAttributes...,
-			)
-		}
-
-		if cfgExtra.Layers.Backend.Traces != nil {
-			BackendOpts.Traces.StaticAttributes = append(
-				BackendOpts.Traces.StaticAttributes,
-				cfgExtra.Layers.Backend.Traces.StaticAttributes...,
-			)
-		}
+	if s != nil && s.cfgData.Layers != nil {
+		sOpts = s.cfgData.Layers.Backend
 	}
 
-	return BackendOpts
+	cfgExtra, err := config.LuraExtraCfg(cfg.ExtraConfig)
+	if err == nil || cfgExtra != nil || cfgExtra.Layers != nil {
+		extraBOpts = cfgExtra.Layers.Backend
+	}
+
+	if extraBOpts == nil {
+		if sOpts == nil {
+			return new(config.BackendOpts)
+		}
+		return sOpts
+	} else if sOpts == nil {
+		return extraBOpts
+	}
+
+	bOpts := new(config.BackendOpts)
+	*bOpts = *sOpts
+
+	if extraBOpts.Metrics != nil {
+		bOpts.Metrics.StaticAttributes = append(
+			bOpts.Metrics.StaticAttributes,
+			cfgExtra.Layers.Backend.Metrics.StaticAttributes...,
+		)
+	}
+
+	if extraBOpts.Traces != nil {
+		bOpts.Traces.StaticAttributes = append(
+			bOpts.Traces.StaticAttributes,
+			cfgExtra.Layers.Backend.Traces.StaticAttributes...,
+		)
+	}
+
+	return bOpts
 }
 
 func (s *StateConfig) SkipEndpoint(endpoint string) bool {

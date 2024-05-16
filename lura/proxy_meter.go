@@ -19,10 +19,16 @@ type middlewareMeter struct {
 }
 
 func newMiddlewareMeter(s state.OTEL, stageName string, attrs []attribute.KeyValue) (*middlewareMeter, error) {
+	if s == nil {
+		return nil, errors.New("no OTEL state provided")
+	}
 	mAttrs := make([]attribute.KeyValue, 0, len(attrs))
 	mAttrs = append(mAttrs, attrs...)
 
 	meter := s.Meter()
+	if meter == nil {
+		return nil, errors.New("OTEL state returned nil meter")
+	}
 	var err error
 	durationName := "krakend." + stageName + ".duration"
 	duration, err := meter.Float64Histogram(durationName, kotelconfig.TimeBucketsOpt)
