@@ -78,7 +78,7 @@ func (s *StateConfig) EndpointPipeOpts(cfg *luraconfig.EndpointConfig) *config.P
 }
 
 func (s *StateConfig) EndpointBackendOpts(cfg *luraconfig.Backend) *config.BackendOpts {
-	return mergedBackendOpts(s, cfg)
+	return s.mergedBackendOpts(cfg)
 }
 
 func (*StateConfig) BackendOTEL(_ *luraconfig.Backend) OTEL {
@@ -86,10 +86,10 @@ func (*StateConfig) BackendOTEL(_ *luraconfig.Backend) OTEL {
 }
 
 func (s *StateConfig) BackendOpts(cfg *luraconfig.Backend) *config.BackendOpts {
-	return mergedBackendOpts(s, cfg)
+	return s.mergedBackendOpts(cfg)
 }
 
-func mergedBackendOpts(s *StateConfig, cfg *luraconfig.Backend) *config.BackendOpts {
+func (s *StateConfig) mergedBackendOpts(cfg *luraconfig.Backend) *config.BackendOpts {
 	var extraBOpts *config.BackendOpts
 	var sOpts *config.BackendOpts
 
