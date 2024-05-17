@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 
+	otelhttp "github.com/krakend/krakend-otel/http"
 	otelio "github.com/krakend/krakend-otel/io"
 	"github.com/krakend/krakend-otel/state"
 )
@@ -133,7 +134,7 @@ func newTransport(base http.RoundTripper, metricsOpts TransportMetricsOptions,
 		otelState:     otelState,
 		tracesOpts:    tracesOpts,
 		metricsOpts:   metricsOpts,
-		metrics:       newTransportMetrics(&metricsOpts, meter, clientName),
+		metrics:       newTransportMetrics(&metricsOpts, meter),
 		traces:        newTransportTraces(&tracesOpts, tracer, clientName),
 		readerWrapper: readWrapperBuilder(&metricsOpts, &tracesOpts, meter, tracer),
 	}
@@ -154,7 +155,8 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	rtt.resp, rtt.err = t.base.RoundTrip(rtt.req)
 	rtt.latencyInSecs = float64(time.Since(requestSentAt)) / float64(time.Second)
 
-	t.metrics.report(&rtt, t.metricsOpts.FixedAttributes)
+	attributes := append(otelhttp.CustomMetricAttributes(req), t.metricsOpts.FixedAttributes...)
+	t.metrics.report(&rtt, attributes)
 
 	if rtt.resp != nil && rtt.resp.Body != nil {
 		rtt.resp.Body = t.readerWrapper(rtt.resp.Body, rtt.req.Context())
