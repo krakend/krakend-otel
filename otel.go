@@ -86,6 +86,7 @@ func RegisterGlobalInstance(ctx context.Context, l logging.Logger,
 		TraceSampleRate:       traceSampleRate,
 		MetricProviders:       make([]string, 0, len(me)),
 		TraceProviders:        make([]string, 0, len(te)),
+		WithEnvironments:      true,
 	}
 	for k, v := range me {
 		if v.MetricDefaultReporting() {

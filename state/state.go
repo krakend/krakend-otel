@@ -44,6 +44,7 @@ type OTELStateConfig struct {
 	TraceProviders        []string `json:"trace_providers"`
 	MetricReportingPeriod int      `json:"metric_reporting_period"`
 	TraceSampleRate       float64  `json:"trace_sample_rate"`
+	WithEnvironments      bool     `json:"environments_enabled"`
 }
 
 // OTELState is the basic implementation of an [OTEL] intstance.
@@ -64,10 +65,20 @@ type OTELState struct {
 func NewWithVersion(serviceName string, cfg *OTELStateConfig, version string,
 	me map[string]exporter.MetricReader, te map[string]exporter.SpanExporter,
 ) (*OTELState, error) {
-	res := sdkresource.NewWithAttributes(
-		semconv.SchemaURL,
-		semconv.ServiceName(serviceName),
-		semconv.ServiceVersion(version))
+	resourceOptions := []sdkresource.Option{
+		sdkresource.WithAttributes(
+			semconv.ServiceName(serviceName),
+			semconv.ServiceVersion(version),
+		),
+	}
+	if cfg.WithEnvironments {
+		resourceOptions = append(resourceOptions, sdkresource.WithFromEnv())
+	}
+
+	res, err := sdkresource.New(context.TODO(), resourceOptions...)
+	if err != nil {
+		return nil, err
+	}
 
 	reportingPeriod := time.Duration(cfg.MetricReportingPeriod) * time.Second
 	metricOpts := make([]sdkmetric.Option, 0, len(cfg.MetricProviders)+2)
