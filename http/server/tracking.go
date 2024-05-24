@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -21,14 +22,16 @@ type tracking struct {
 	ctx       context.Context
 	span      trace.Span
 
-	latencyInSecs   float64
-	responseSize    int
-	responseStatus  int
-	responseHeaders map[string][]string
-	writeErrs       []error
-	endpointPattern string
-	isHijacked      bool
-	hijackedErr     error
+	latencyInSecs      float64
+	responseSize       int
+	responseStatus     int
+	responseHeaders    map[string][]string
+	writeErrs          []error
+	endpointPattern    string
+	isHijacked         bool
+	metricsStaticAttrs []attribute.KeyValue
+	tracesStaticAttrs  []attribute.KeyValue
+	hijackedErr        error
 }
 
 func (t *tracking) EndpointPattern() string {
@@ -39,6 +42,14 @@ func (t *tracking) EndpointPattern() string {
 		return "404 Not Found"
 	}
 	return t.endpointPattern
+}
+
+func (t *tracking) MetricsStaticAttributes() []attribute.KeyValue {
+	return t.metricsStaticAttrs
+}
+
+func (t *tracking) TracesStaticAttributes() []attribute.KeyValue {
+	return t.tracesStaticAttrs
 }
 
 func newTracking() *tracking {
@@ -61,6 +72,15 @@ func fromContext(ctx context.Context) *tracking {
 func SetEndpointPattern(ctx context.Context, endpointPattern string) {
 	if t := fromContext(ctx); t != nil {
 		t.endpointPattern = endpointPattern
+	}
+}
+
+// SetStaticAttributtes allows to set metrics and traces static attributes in
+// the request context
+func SetStaticAttributtes(ctx context.Context, metricAttrs, tracesAttrs []attribute.KeyValue) {
+	if t := fromContext(ctx); t != nil {
+		t.metricsStaticAttrs = metricAttrs
+		t.tracesStaticAttrs = tracesAttrs
 	}
 }
 

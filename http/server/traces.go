@@ -6,7 +6,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 
 	otelhttp "github.com/krakend/krakend-otel/http"
@@ -71,6 +71,7 @@ func (t *tracesHTTP) end(tr *tracking) {
 		semconv.HTTPRoute(tr.EndpointPattern()),
 		semconv.HTTPResponseStatusCode(tr.responseStatus),
 		semconv.HTTPResponseBodySize(tr.responseSize))
+	tr.span.SetAttributes(tr.tracesStaticAttrs...)
 
 	if tr.responseHeaders != nil {
 		// report all incoming headers
