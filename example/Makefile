@@ -1,8 +1,8 @@
 KRAKEND_LOCAL_IP ?= 192.168.1.12
 
-build:
+srv:
 	go build -o srv ./server
-.PHONY: build
+.PHONY: srv
 
 image:
 	docker build -f ./server/Dockerfile -t krakend-otel-example:latest ..
