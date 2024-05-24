@@ -133,8 +133,14 @@ func BackendFactory(bf proxy.BackendFactory) proxy.BackendFactory {
 			return next
 		}
 		backendOpts := otelCfg.BackendOpts(cfg)
-		if backendOpts.Metrics.DisableStage && backendOpts.Traces.DisableStage {
+		metricsDisabled := backendOpts != nil && backendOpts.Metrics != nil && backendOpts.Metrics.DisableStage
+		tracesDisabled := backendOpts != nil && backendOpts.Traces != nil && backendOpts.Traces.DisableStage
+		if metricsDisabled && tracesDisabled {
 			return next
+		}
+		reportHeaders := false
+		if backendOpts.Traces != nil && backendOpts.Traces.ReportHeaders {
+			reportHeaders = true
 		}
 
 		gs := otelCfg.BackendOTEL(cfg)
@@ -146,7 +152,7 @@ func BackendFactory(bf proxy.BackendFactory) proxy.BackendFactory {
 			attribute.String("krakend.endpoint.route", parentEndpoint),
 			attribute.String("krakend.endpoint.method", cfg.ParentEndpointMethod),
 		}
-		return middleware(gs, !backendOpts.Metrics.DisableStage, !backendOpts.Traces.DisableStage,
-			"backend", urlPattern, attrs, backendOpts.Traces.ReportHeaders)(next)
+		return middleware(gs, !metricsDisabled, !tracesDisabled,
+			"backend", urlPattern, attrs, reportHeaders)(next)
 	}
 }
