@@ -193,6 +193,5 @@ func BackendFactory(bf proxy.BackendFactory) proxy.BackendFactory {
 
 		return middleware(gs, !metricsDisabled, !tracesDisabled,
 			"backend", urlPattern, metricsAttrs, tracesAttrs, reportHeaders)(next)
-
 	}
 }
