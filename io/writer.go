@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 )
 
 var _ io.WriteCloser = (*instrumentedWriter)(nil)
@@ -41,6 +42,7 @@ func NewInstrumentedWriterFactory(prefix string, attrT []attribute.KeyValue, att
 			writer: w,
 			track: ioTracking{
 				instr: instr,
+				span:  nooptrace.Span{},
 				ctx:   ctx,
 			},
 		}
