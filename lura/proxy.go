@@ -154,7 +154,9 @@ func BackendFactory(bf proxy.BackendFactory) proxy.BackendFactory {
 			return next
 		}
 		backendOpts := otelCfg.BackendOpts(cfg)
-		if backendOpts.Metrics.DisableStage && backendOpts.Traces.DisableStage {
+		metricsDisabled := backendOpts != nil && backendOpts.Metrics != nil && backendOpts.Metrics.DisableStage
+		tracesDisabled := backendOpts != nil && backendOpts.Traces != nil && backendOpts.Traces.DisableStage
+		if metricsDisabled && tracesDisabled {
 			return next
 		}
 
@@ -171,19 +173,25 @@ func BackendFactory(bf proxy.BackendFactory) proxy.BackendFactory {
 		// Add configured static attributes
 		metricsAttrs := attrs
 		tracesAttrs := attrs
-		for _, kv := range backendOpts.Metrics.StaticAttributes {
-			if len(kv.Key) > 0 && len(kv.Value) > 0 {
-				metricsAttrs = append(metricsAttrs, attribute.String(kv.Key, kv.Value))
+		if backendOpts.Metrics != nil {
+			for _, kv := range backendOpts.Metrics.StaticAttributes {
+				if len(kv.Key) > 0 && len(kv.Value) > 0 {
+					metricsAttrs = append(metricsAttrs, attribute.String(kv.Key, kv.Value))
+				}
 			}
 		}
 
-		for _, kv := range backendOpts.Traces.StaticAttributes {
-			if len(kv.Key) > 0 && len(kv.Value) > 0 {
-				tracesAttrs = append(tracesAttrs, attribute.String(kv.Key, kv.Value))
+		reportHeaders := false
+		if backendOpts.Traces != nil {
+			reportHeaders = backendOpts.Traces.ReportHeaders
+			for _, kv := range backendOpts.Traces.StaticAttributes {
+				if len(kv.Key) > 0 && len(kv.Value) > 0 {
+					tracesAttrs = append(tracesAttrs, attribute.String(kv.Key, kv.Value))
+				}
 			}
 		}
 
-		return middleware(gs, !backendOpts.Metrics.DisableStage, !backendOpts.Traces.DisableStage,
-			"backend", urlPattern, metricsAttrs, tracesAttrs, backendOpts.Traces.ReportHeaders)(next)
+		return middleware(gs, !metricsDisabled, !tracesDisabled,
+			"backend", urlPattern, metricsAttrs, tracesAttrs, reportHeaders)(next)
 	}
 }
