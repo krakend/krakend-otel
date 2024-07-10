@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 )
 
 var _ io.ReadCloser = (*instrumentedReader)(nil)
@@ -39,6 +40,7 @@ func NewInstrumentedReaderFactory(prefix string, attrT []attribute.KeyValue, att
 			reader: rc,
 			track: ioTracking{
 				instr: instr,
+				span:  nooptrace.Span{},
 				ctx:   ctx,
 			},
 		}

@@ -255,3 +255,60 @@ func TestReaderTimeout(t *testing.T) {
 		return
 	}
 }
+
+func TestReader_noread(t *testing.T) {
+	var err error
+
+	spanRecorder := sdktracetest.NewSpanRecorder()
+	tracerProvider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	tracer := tracerProvider.Tracer("test-tracer")
+	ctx, _ := tracer.Start(context.Background(), "test-body-tracker")
+
+	metricReader := sdkmetric.NewManualReader()
+	metricProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(metricReader))
+	meter := metricProvider.Meter("test-meter")
+
+	// this is the buffer where we want to write something:
+	var bw bytes.Buffer
+	bw.Grow(64 * 1024)
+
+	payload := "foo bar"
+	bw.WriteString(payload)
+
+	attrsT := []attribute.KeyValue{
+		attribute.Int("http.status_code", 201),
+		attribute.String("url.path.pattern", "/this/{matched}/path"),
+		attribute.String("url.path", "/this/some_value/path"),
+	}
+	attrsM := []attribute.KeyValue{
+		attribute.Int("http.status_code", 201),
+		attribute.String("url.path", "/this/{matched}/path"),
+	}
+	reader := NewInstrumentedReader("", &bw, ctx, attrsT, attrsM, tracer, meter)
+	reader.Close()
+
+	endedSpans := spanRecorder.Ended()
+	if len(endedSpans) != 0 {
+		t.Errorf("num ended spans, want: 0, got: %d", len(endedSpans))
+		for idx, s := range endedSpans {
+			t.Errorf("%d -> %#v", idx, s)
+		}
+		return
+	}
+
+	// check the reported metrics
+	rm := metricdata.ResourceMetrics{}
+	err = metricReader.Collect(context.Background(), &rm)
+	if err != nil {
+		t.Errorf("collecting metrics err: %s", err.Error())
+		return
+	}
+
+	if len(rm.ScopeMetrics) != 1 {
+		t.Errorf("wrong amount of metrics, want: 1, got: %d", len(rm.ScopeMetrics))
+		for idx, sm := range rm.ScopeMetrics {
+			t.Errorf("%d -> %#v", idx, sm)
+		}
+		return
+	}
+}
