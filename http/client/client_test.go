@@ -108,6 +108,13 @@ func TestInstrumentedHTTPClient(t *testing.T) {
 	}
 
 	req, err := http.NewRequest("GET", server.URL, nil)
+
+	traceState := trace.TraceState{}
+	traceState, _ = traceState.Insert("key1", "value1")
+	traceState, _ = traceState.Insert("key2", "value2")
+
+	req = req.Clone(trace.ContextWithSpanContext(req.Context(), trace.SpanContextFromContext(req.Context()).WithTraceState(traceState)))
+
 	if err != nil {
 		t.Errorf("unexpected error creating request: %s", err.Error())
 		return
@@ -147,6 +154,31 @@ func TestInstrumentedHTTPClient(t *testing.T) {
 				fromChildTraceID, fromParentTraceID)
 			return
 		}
+	}
+
+	foundTestTraceAttr := false
+	foundTraceStateAttr := false
+	for i := range parentSpan.Attributes() {
+		if parentSpan.Attributes()[i].Key == "test-trace-attr" {
+			foundTestTraceAttr = true
+			if parentSpan.Attributes()[i].Value.AsString() != "a_trace" {
+				t.Errorf("Expected parent span to have attribute test-trace-attr with value a_trace but it had a different value")
+			}
+		}
+		if parentSpan.Attributes()[i].Key == "tracestate" {
+			if parentSpan.Attributes()[i].Value.AsString() != "key2=value2,key1=value1" {
+				t.Errorf("Expected parent span to have attribute tracestate with key2=value2,key1=value1 but it had a different value")
+			}
+			foundTraceStateAttr = true
+		}
+	}
+
+	if !foundTestTraceAttr {
+		t.Errorf("Expected parent span to have attribute test-trace-attr but it did not")
+	}
+
+	if !foundTraceStateAttr {
+		t.Errorf("Expected parent span to have attribute tracestate but it did not")
 	}
 
 	// check the metrics
