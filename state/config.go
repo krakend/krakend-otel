@@ -7,11 +7,20 @@ import (
 
 type Config interface {
 	OTEL() OTEL
+	// GlobalOpts gets the configuration at the service level.
 	GlobalOpts() *config.GlobalOpts
 
 	// Gets the OTEL instance for a given endpoint
 	EndpointOTEL(cfg *luraconfig.EndpointConfig) OTEL
+	// EndpointPipeOpts retrieve "proxy" level configuration for a given
+	// endpoint.
 	EndpointPipeOpts(cfg *luraconfig.EndpointConfig) *config.PipeOpts
+	// EndpointBackendOpts should return a config for all the child
+	// backend of this endpoint.
+	//
+	// Deprecated: the interface should only need to fetch the BackendOpts
+	// from a luraconfig.Backend when configuring at the Backend level:
+	// the BackendOpts function must be used instead.
 	EndpointBackendOpts(cfg *luraconfig.Backend) *config.BackendOpts
 
 	BackendOTEL(cfg *luraconfig.Backend) OTEL
@@ -39,44 +48,30 @@ func (*StateConfig) EndpointOTEL(_ *luraconfig.EndpointConfig) OTEL {
 	return GlobalState()
 }
 
+// EndpointPipeOpts checks if there is an override for pipe ("proxy")
+// options at the endpoint levels a fully replaces (it DOES NOT MERGE
+// attributes) the existing config from the service level configuration.
+// If none of those configs are found, it falls back to the defaults.
 func (s *StateConfig) EndpointPipeOpts(cfg *luraconfig.EndpointConfig) *config.PipeOpts {
-	var sOpts *config.PipeOpts
-	var extraPOpts *config.PipeOpts
-
+	var opts *config.PipeOpts
 	if s != nil && s.cfgData.Layers != nil {
-		sOpts = s.cfgData.Layers.Pipe
+		opts = s.cfgData.Layers.Pipe
 	}
 
-	cfgExtra, err := config.LuraExtraCfg(cfg.ExtraConfig)
-	if err == nil && cfgExtra != nil && cfgExtra.Layers != nil {
-		extraPOpts = cfgExtra.Layers.Pipe
+	cfgLayer, err := config.LuraLayerExtraCfg(cfg.ExtraConfig)
+	if err == nil && cfgLayer != nil {
+		opts = cfgLayer.Pipe
 	}
 
-	if extraPOpts == nil {
-		if sOpts == nil {
-			return new(config.PipeOpts)
-		}
-		return sOpts
-	} else if sOpts == nil {
-		return extraPOpts
+	if opts == nil {
+		return new(config.PipeOpts)
 	}
-
-	pOpts := new(config.PipeOpts)
-	*pOpts = *sOpts
-
-	pOpts.MetricsStaticAttributes = append(
-		pOpts.MetricsStaticAttributes,
-		cfgExtra.Layers.Pipe.MetricsStaticAttributes...,
-	)
-
-	pOpts.TracesStaticAttributes = append(
-		pOpts.TracesStaticAttributes,
-		cfgExtra.Layers.Pipe.TracesStaticAttributes...,
-	)
-
-	return pOpts
+	return opts
 }
 
+// EndpointBackendOpts is a bad interface function, as is should receive
+// as a param a luraconfig.Endpoint .. but also makes no sense to have it
+// because we only need the backend configuration at
 func (s *StateConfig) EndpointBackendOpts(cfg *luraconfig.Backend) *config.BackendOpts {
 	return s.mergedBackendOpts(cfg)
 }
@@ -90,45 +85,20 @@ func (s *StateConfig) BackendOpts(cfg *luraconfig.Backend) *config.BackendOpts {
 }
 
 func (s *StateConfig) mergedBackendOpts(cfg *luraconfig.Backend) *config.BackendOpts {
-	var extraBOpts *config.BackendOpts
-	var sOpts *config.BackendOpts
-
+	var opts *config.BackendOpts
 	if s != nil && s.cfgData.Layers != nil {
-		sOpts = s.cfgData.Layers.Backend
+		opts = s.cfgData.Layers.Backend
 	}
 
-	cfgExtra, err := config.LuraExtraCfg(cfg.ExtraConfig)
-	if err == nil && cfgExtra != nil && cfgExtra.Layers != nil {
-		extraBOpts = cfgExtra.Layers.Backend
+	cfgLayer, err := config.LuraLayerExtraCfg(cfg.ExtraConfig)
+	if err == nil && cfgLayer != nil {
+		opts = cfgLayer.Backend
 	}
 
-	if extraBOpts == nil {
-		if sOpts == nil {
-			return new(config.BackendOpts)
-		}
-		return sOpts
-	} else if sOpts == nil {
-		return extraBOpts
+	if opts == nil {
+		return new(config.BackendOpts)
 	}
-
-	bOpts := new(config.BackendOpts)
-	*bOpts = *sOpts
-
-	if extraBOpts.Metrics != nil {
-		bOpts.Metrics.StaticAttributes = append(
-			bOpts.Metrics.StaticAttributes,
-			cfgExtra.Layers.Backend.Metrics.StaticAttributes...,
-		)
-	}
-
-	if extraBOpts.Traces != nil {
-		bOpts.Traces.StaticAttributes = append(
-			bOpts.Traces.StaticAttributes,
-			cfgExtra.Layers.Backend.Traces.StaticAttributes...,
-		)
-	}
-
-	return bOpts
+	return opts
 }
 
 func (s *StateConfig) SkipEndpoint(endpoint string) bool {
