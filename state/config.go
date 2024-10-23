@@ -59,7 +59,7 @@ func (s *StateConfig) EndpointPipeOpts(cfg *luraconfig.EndpointConfig) *config.P
 	}
 
 	cfgLayer, err := config.LuraLayerExtraCfg(cfg.ExtraConfig)
-	if err == nil && cfgLayer != nil {
+	if err == nil && cfgLayer != nil && cfgLayer.Pipe != nil {
 		opts = cfgLayer.Pipe
 	}
 
@@ -91,7 +91,7 @@ func (s *StateConfig) mergedBackendOpts(cfg *luraconfig.Backend) *config.Backend
 	}
 
 	cfgLayer, err := config.LuraLayerExtraCfg(cfg.ExtraConfig)
-	if err == nil && cfgLayer != nil {
+	if err == nil && cfgLayer != nil && cfgLayer.Backend != nil {
 		opts = cfgLayer.Backend
 	}
 
