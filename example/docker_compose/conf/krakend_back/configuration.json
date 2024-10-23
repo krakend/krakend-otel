@@ -30,36 +30,20 @@
             "endpoint": "/back_combination/{id}",
             "extra_config": {
             "telemetry/opentelemetry": {
-                "layers": {
-                    "global": {
-                        "metrics_static_attributes": [
-                            {
-                                "key": "my_metric_global_override_attr",
-                                "value": "my_metric_global_override_val"
-                            }
-                        ],
-                        "traces_static_attributes": [
-                            {
-                                "key": "my_trace_global_override_attr",
-                                "value": "my_trace_global_override_val"
-                            }
-                        ]
-                    },
-                    "proxy": {
-                        "metrics_static_attributes": [
-                            {
-                                "key": "my_metric_proxy_override_attr",
-                                "value": "my_metric_proxy_override_val"
-                            }
-                        ],
-                        ,
-                        "traces_static_attributes": [
-                            {
-                                "key": "my_trace_proxy_override_attr",
-                                "value": "my_trace_proxy_override_val"
-                            }
-                        ]
-                    }
+                "proxy": {
+                    "metrics_static_attributes": [
+                        {
+                            "key": "my_metric_proxy_override_attr",
+                            "value": "my_metric_proxy_override_val"
+                        }
+                    ],
+                    ,
+                    "traces_static_attributes": [
+                        {
+                            "key": "my_trace_proxy_override_attr",
+                            "value": "my_trace_proxy_override_val"
+                        }
+                    ]
                 }
             },
             "backend": [
@@ -74,24 +58,22 @@
                     },
                     "extra_config": {
                         "telemetry/opentelemetry": {
-                            "layers": {
-                                "backend": {
-                                    "metrics": {
-                                        "static_attributes": [
-                                            {
-                                                "key": "my_metric_backend_override_attr",
-                                                "value": "my_metric_backend_override_val"
-                                            }
-                                        ]
-                                    },
-                                    "traces": {
-                                        "static_attributes": [
-                                            {
-                                                "key": "my_trace_backend_override_attr",
-                                                "value": "my_trace_backend_override_val"
-                                            }
-                                        ]
-                                    }
+                            "backend": {
+                                "metrics": {
+                                    "static_attributes": [
+                                        {
+                                            "key": "my_metric_backend_override_attr",
+                                            "value": "my_metric_backend_override_val"
+                                        }
+                                    ]
+                                },
+                                "traces": {
+                                    "static_attributes": [
+                                        {
+                                            "key": "my_trace_backend_override_attr",
+                                            "value": "my_trace_backend_override_val"
+                                        }
+                                    ]
                                 }
                             }
                         }
