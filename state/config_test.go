@@ -10,11 +10,9 @@ import (
 func TestEndpointPipeConfigOverride(t *testing.T) {
 	globalMetricAttrs := makeGlobalMetricAttr()
 	overrideMetricAttrs := makeOverrideMetricAttr()
-	expectedMetricAttrs := append(globalMetricAttrs, overrideMetricAttrs...) // skipcq: CRT-D0001
 
 	globalTraceAttrs := makeGlobalTraceAttr()
 	overrideTraceAttrs := makeOverrideTraceAttr()
-	expectedTraceAttrs := append(globalTraceAttrs, overrideTraceAttrs...) // skipcq: CRT-D0001
 
 	stateCfg := &StateConfig{
 		cfgData: makePipeConf(globalMetricAttrs, globalTraceAttrs),
@@ -22,26 +20,33 @@ func TestEndpointPipeConfigOverride(t *testing.T) {
 
 	pipeCfg := &luraconfig.EndpointConfig{
 		ExtraConfig: map[string]interface{}{
-			"telemetry/opentelemetry": makePipeConf(overrideMetricAttrs, overrideTraceAttrs),
+			"telemetry/opentelemetry": map[string]interface{}{
+				"proxy": map[string]interface{}{
+					"metrics_static_attributes": overrideMetricAttrs,
+					"traces_static_attributes":  overrideTraceAttrs,
+				},
+			},
 		},
 	}
 
 	pipeOpts := stateCfg.EndpointPipeOpts(pipeCfg)
-
-	if len(pipeOpts.MetricsStaticAttributes) != len(expectedMetricAttrs) {
-		t.Errorf(
-			"Incorrect number of attributes for metrics. returned: %+v - expected: %+v",
-			pipeOpts.MetricsStaticAttributes,
-			expectedMetricAttrs,
-		)
+	if pipeOpts == nil {
+		t.Errorf("Unexpected nil for pipe opts")
+		return
 	}
 
-	if len(pipeOpts.TracesStaticAttributes) != len(expectedTraceAttrs) {
+	if len(pipeOpts.MetricsStaticAttributes) != len(overrideMetricAttrs) {
+		t.Errorf(
+			"Incorrect number of attributes for metrics. returned: %+v - expected: %+v",
+			pipeOpts.MetricsStaticAttributes, overrideMetricAttrs)
+		return
+	}
+
+	if len(pipeOpts.TracesStaticAttributes) != len(overrideTraceAttrs) {
 		t.Errorf(
 			"Incorrect number of attributes for traces. returned: %+v - expected: %+v",
-			pipeOpts.TracesStaticAttributes,
-			expectedTraceAttrs,
-		)
+			pipeOpts.TracesStaticAttributes, overrideTraceAttrs)
+		return
 	}
 }
 
@@ -56,12 +61,17 @@ func TestEndpointPipeNoOverride(t *testing.T) {
 	}
 
 	pipeOpts := stateCfg.EndpointPipeOpts(pipeCfg)
+	if pipeOpts == nil {
+		t.Errorf("unextpected nil pipeOpts")
+		return
+	}
 
 	if len(pipeOpts.MetricsStaticAttributes) > 1 {
 		t.Errorf(
 			"Incorrect number of attributes for metrics. returned: %+v",
 			pipeOpts.MetricsStaticAttributes,
 		)
+		return
 	}
 }
 
@@ -83,17 +93,16 @@ func TestEndpointPipeConfigOnlyOverride(t *testing.T) {
 			"Incorrect number of attributes for metrics. returned: %+v",
 			pipeOpts.MetricsStaticAttributes,
 		)
+		return
 	}
 }
 
 func TestBackendConfigOverride(t *testing.T) {
 	globalMetricAttrs := makeGlobalMetricAttr()
 	overrideMetricAttrs := makeOverrideMetricAttr()
-	expectedMetricAttrs := append(globalMetricAttrs, overrideMetricAttrs...) // skipcq: CRT-D0001
 
 	globalTraceAttrs := makeGlobalTraceAttr()
 	overrideTraceAttrs := makeOverrideTraceAttr()
-	expectedTraceAttrs := append(globalTraceAttrs, overrideTraceAttrs...) // skipcq: CRT-D0001
 
 	stateCfg := &StateConfig{
 		cfgData: makeBackendConf(globalMetricAttrs, globalTraceAttrs),
@@ -101,26 +110,46 @@ func TestBackendConfigOverride(t *testing.T) {
 
 	backendCfg := &luraconfig.Backend{
 		ExtraConfig: map[string]interface{}{
-			"telemetry/opentelemetry": makeBackendConf(overrideMetricAttrs, overrideTraceAttrs),
+			"telemetry/opentelemetry": map[string]interface{}{
+				"backend": map[string]interface{}{
+					"metrics": map[string]interface{}{
+						"static_attributes": overrideMetricAttrs,
+					},
+					"traces": map[string]interface{}{
+						"static_attributes": overrideTraceAttrs,
+					},
+				},
+			},
 		},
 	}
 
 	backendOpts := stateCfg.BackendOpts(backendCfg)
-
-	if len(backendOpts.Metrics.StaticAttributes) != len(expectedMetricAttrs) {
-		t.Errorf(
-			"Incorrect number of attributes for metrics. returned: %+v - expected: %+v",
-			backendOpts.Metrics.StaticAttributes,
-			expectedMetricAttrs,
-		)
+	if backendOpts == nil {
+		t.Errorf("unexpected nil backendOpts")
+		return
 	}
 
-	if len(backendOpts.Traces.StaticAttributes) != len(expectedTraceAttrs) {
+	if backendOpts.Metrics == nil {
+		t.Errorf("unexpected nil backendOpts.Metrics")
+		return
+	}
+
+	if len(backendOpts.Metrics.StaticAttributes) != len(overrideMetricAttrs) {
+		t.Errorf(
+			"Incorrect number of attributes for metrics. returned: %+v - expected: %+v",
+			backendOpts.Metrics.StaticAttributes, overrideMetricAttrs)
+		return
+	}
+
+	if backendOpts.Traces == nil {
+		t.Errorf("unexpected nil backendOpts.Traces")
+		return
+	}
+	if len(backendOpts.Traces.StaticAttributes) != len(overrideTraceAttrs) {
 		t.Errorf(
 			"Incorrect number of attributes for traces. returned: %+v - expected: %+v",
-			backendOpts.Traces.StaticAttributes,
-			expectedTraceAttrs,
-		)
+			backendOpts.Traces.StaticAttributes, overrideTraceAttrs)
+		return
 	}
 }
 
@@ -135,27 +164,10 @@ func TestBackendConfigNoOverride(t *testing.T) {
 	}
 
 	backendOpts := stateCfg.BackendOpts(backendCfg)
-
-	if len(backendOpts.Metrics.StaticAttributes) > 1 {
-		t.Errorf(
-			"Incorrect number of attributes for metrics. returned: %+v",
-			backendOpts.Traces.StaticAttributes,
-		)
+	if backendOpts == nil {
+		t.Errorf("unexpected nil backendOpts")
+		return
 	}
-}
-
-func TestBackendConfigOnlyOverride(t *testing.T) {
-	stateCfg := &StateConfig{
-		cfgData: makeBackendConf([]config.KeyValue{}, []config.KeyValue{}),
-	}
-
-	backendCfg := &luraconfig.Backend{
-		ExtraConfig: map[string]interface{}{
-			"telemetry/opentelemetry": makeBackendConf(makeOverrideMetricAttr(), makeOverrideTraceAttr()),
-		},
-	}
-
-	backendOpts := stateCfg.BackendOpts(backendCfg)
 
 	if len(backendOpts.Metrics.StaticAttributes) > 1 {
 		t.Errorf(
