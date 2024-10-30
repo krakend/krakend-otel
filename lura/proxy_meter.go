@@ -41,13 +41,31 @@ func newMiddlewareMeter(s state.OTEL, stageName string, attrs []attribute.KeyVal
 	}, nil
 }
 
+// multiError is an interface that is implemented by lura at the
+// proxy level to gather errors for each of the backends
+type multiError interface {
+	error
+	Errors() []error
+}
+
 func (m *middlewareMeter) report(ctx context.Context, secs float64, resp *proxy.Response, err error) {
 	isErr := false
 	isCanceled := false
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
 			isCanceled = true
-		} else {
+		}
+		if mErr, ok := err.(multiError); ok {
+			errs := mErr.Errors()
+			for _, e := range errs {
+				if errors.Is(e, context.Canceled) {
+					isCanceled = true
+				} else {
+					isErr = true
+				}
+			}
+		}
+		if !isCanceled {
 			isErr = true
 		}
 	}
