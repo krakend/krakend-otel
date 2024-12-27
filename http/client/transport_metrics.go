@@ -6,7 +6,9 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/semconv/v1.21.0"
+	v127 "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	kotelconfig "github.com/krakend/krakend-otel/config"
 )
@@ -19,6 +21,7 @@ type TransportMetricsOptions struct {
 	ReadPayload        bool                 // provide metrics for the reading the full body
 	DetailedConnection bool                 // provide detailed metrics about the connection: dns lookup, tls ...
 	FixedAttributes    []attribute.KeyValue // "static" attributes set at config time.
+	SemConv            string               // to use the latest metric names conventions
 }
 
 // Enabled tells if metrics should be reported for the transport.
@@ -37,7 +40,8 @@ type transportMetrics struct {
 	// the value of the Content-Length header for the request (not the
 	// actual written bytes of the request, that might be cancelled
 	// when it is already on flight.
-	requestContentLength metric.Int64Counter
+	requestContentLength     metric.Int64Counter
+	requestContentLengthHist metric.Int64Histogram
 
 	responseLatency metric.Float64Histogram
 
@@ -56,18 +60,19 @@ type transportMetrics struct {
 	clientName string
 }
 
-func newTransportMetrics(metricsOpts *TransportMetricsOptions, meter metric.Meter, clientName string) *transportMetrics {
-	if meter == nil {
-		return nil
-	}
+type metricFillerFn func(metricsOpts *TransportMetricsOptions, meter metric.Meter, tm *transportMetrics)
 
-	var tm transportMetrics
+func noSemConvMetricsFiller(metricsOpts *TransportMetricsOptions, meter metric.Meter, tm *transportMetrics) {
+	nopMeter := noop.Meter{}
+
 	tm.requestsStarted, _ = meter.Int64Counter("http.client.request.started.count")   // number of reqs started
 	tm.requestsFailed, _ = meter.Int64Counter("http.client.request.failed.count")     // number of reqs failed
 	tm.requestsCanceled, _ = meter.Int64Counter("http.client.request.canceled.count") // number of canceled requests
 	tm.requestsTimedOut, _ = meter.Int64Counter("http.client.request.timedout.count") // numer of timedout request (inclued in failed)
 
 	tm.requestContentLength, _ = meter.Int64Counter("http.client.request.size") // the value of the Content-Length header for the request
+	// For non implemented metrics that can be used with other config, we use a noop meter:
+	tm.requestContentLengthHist, _ = nopMeter.Int64Histogram(v127.HTTPClientRequestBodySizeName)
 
 	tm.responseLatency, _ = meter.Float64Histogram("http.client.duration", kotelconfig.TimeBucketsOpt)
 	tm.responseContentLength, _ = meter.Int64Histogram("http.client.response.size", kotelconfig.SizeBucketsOpt)
@@ -77,6 +82,86 @@ func newTransportMetrics(metricsOpts *TransportMetricsOptions, meter metric.Mete
 	tm.getConnLatency, _ = meter.Float64Histogram("http.client.request.get-conn.duration", kotelconfig.TimeBucketsOpt)
 	tm.dnsLatency, _ = meter.Float64Histogram("http.client.request.dns.duration", kotelconfig.TimeBucketsOpt)
 	tm.tlsLatency, _ = meter.Float64Histogram("http.client.request.tls.duration", kotelconfig.TimeBucketsOpt)
+}
+
+func semConv1_27MetricsFiller(metricsOpts *TransportMetricsOptions, meter metric.Meter, tm *transportMetrics) {
+	nopMeter := noop.Meter{}
+
+	tm.detailsEnabled = metricsOpts.DetailedConnection
+
+	// For non implemented metrics that can be used with other config, we use a noop meter:
+	tm.requestContentLength, _ = nopMeter.Int64Counter("http.client.request.size")
+
+	// WARNING: Stability => Experimental (subject to change in the future)
+	tm.requestContentLengthHist, _ = meter.Int64Histogram(v127.HTTPClientRequestBodySizeName,
+		metric.WithUnit(v127.HTTPClientRequestBodySizeUnit),
+		metric.WithDescription(v127.HTTPClientRequestBodySizeDescription),
+		kotelconfig.SizeBucketsOpt) // the value of the Content-Length header for the request
+
+	tm.responseLatency, _ = meter.Float64Histogram(v127.HTTPClientRequestDurationName,
+		metric.WithUnit(v127.HTTPClientRequestDurationUnit),
+		metric.WithDescription(v127.HTTPClientRequestDurationDescription),
+		kotelconfig.TimeBucketsOpt)
+
+	// WARNING: Stability => Experimental (subject to change in the future)
+	tm.responseContentLength, _ = meter.Int64Histogram(v127.HTTPClientResponseBodySizeName,
+		metric.WithUnit(v127.HTTPClientResponseBodySizeUnit),
+		metric.WithDescription(v127.HTTPClientResponseBodySizeDescription),
+		kotelconfig.SizeBucketsOpt) // the value of the Content-Length header for the response
+
+	// TODO: if we want the exact semantic convention, what should we do with our own extra data, that
+	// is not standarized by OTEL ? for now we only set it if the `metricsOpts.DetailedConnection` is
+	// set too:
+	if metricsOpts.DetailedConnection {
+		tm.requestsStarted, _ = meter.Int64Counter("http.client.request.started.count")   // number of reqs started
+		tm.requestsFailed, _ = meter.Int64Counter("http.client.request.failed.count")     // number of reqs failed
+		tm.requestsCanceled, _ = meter.Int64Counter("http.client.request.canceled.count") // number of canceled requests
+		tm.requestsTimedOut, _ = meter.Int64Counter("http.client.request.timedout.count") // numer of timedout request (inclued in failed)
+
+		tm.responseNoContentLength, _ = meter.Int64Counter("http.client.response.no-content-length",
+			metric.WithUnit(v127.HTTPClientResponseBodySizeUnit),
+			metric.WithDescription("Client received responses that do not have 'Content-Length' value set"))
+		tm.getConnLatency, _ = meter.Float64Histogram("http.client.request.get-conn.duration",
+			metric.WithUnit(v127.HTTPClientRequestDurationUnit),
+			metric.WithDescription("Time spent acquiring a client connection"),
+			kotelconfig.TimeBucketsOpt)
+		tm.dnsLatency, _ = meter.Float64Histogram("http.client.request.dns.duration",
+			metric.WithUnit(v127.HTTPClientRequestDurationUnit),
+			metric.WithDescription("Time spent resolving the DNS name"),
+			kotelconfig.TimeBucketsOpt)
+		tm.tlsLatency, _ = meter.Float64Histogram("http.client.request.tls.duration",
+			metric.WithUnit(v127.HTTPClientRequestDurationUnit),
+			metric.WithDescription("Time spent on TLS negotiation and connection"),
+			kotelconfig.TimeBucketsOpt)
+	} else {
+		tm.requestsStarted, _ = nopMeter.Int64Counter("http.client.request.started.count")   // number of reqs started
+		tm.requestsFailed, _ = nopMeter.Int64Counter("http.client.request.failed.count")     // number of reqs failed
+		tm.requestsCanceled, _ = nopMeter.Int64Counter("http.client.request.canceled.count") // number of canceled requests
+		tm.requestsTimedOut, _ = nopMeter.Int64Counter("http.client.request.timedout.count") // numer of timedout request (inclued in failed)
+
+		tm.responseNoContentLength, _ = nopMeter.Int64Counter("http.client.response.no-content-length")
+		tm.getConnLatency, _ = nopMeter.Float64Histogram("http.client.request.get-conn.duration")
+		tm.dnsLatency, _ = nopMeter.Float64Histogram("http.client.request.dns.duration")
+		tm.tlsLatency, _ = nopMeter.Float64Histogram("http.client.request.tls.duration")
+	}
+
+}
+
+func newTransportMetrics(metricsOpts *TransportMetricsOptions, meter metric.Meter, clientName string) *transportMetrics {
+	if meter == nil {
+		return nil
+	}
+
+	supportedSemConv := map[string]metricFillerFn{
+		"":     noSemConvMetricsFiller,
+		"1.27": semConv1_27MetricsFiller,
+	}
+	var tm transportMetrics
+	filler := noSemConvMetricsFiller
+	if versionFiller, ok := supportedSemConv[metricsOpts.SemConv]; ok {
+		filler = versionFiller
+	}
+	filler(metricsOpts, meter, &tm)
 	return &tm
 }
 
@@ -109,6 +194,7 @@ func (m *transportMetrics) report(rtt *roundTripTracking, attrs []attribute.KeyV
 	if rtt.req.ContentLength >= 0 {
 		// TOOD: should we check the http verb / method to report this ?
 		m.requestContentLength.Add(ctx, rtt.req.ContentLength, attrOpt)
+		m.requestContentLengthHist.Record(ctx, rtt.req.ContentLength, attrOpt)
 	}
 
 	if rtt.err != nil {
