@@ -144,7 +144,6 @@ func semConv1_27MetricsFiller(metricsOpts *TransportMetricsOptions, meter metric
 		tm.dnsLatency, _ = nopMeter.Float64Histogram("http.client.request.dns.duration")
 		tm.tlsLatency, _ = nopMeter.Float64Histogram("http.client.request.tls.duration")
 	}
-
 }
 
 func newTransportMetrics(metricsOpts *TransportMetricsOptions, meter metric.Meter, clientName string) *transportMetrics {
