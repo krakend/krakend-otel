@@ -81,7 +81,7 @@ func NewTrackingHandler(next http.Handler) http.Handler {
 			}
 		}
 
-		m = newMetricsHTTP(s.Meter(), metricsAttrs)
+		m = newMetricsHTTP(s.Meter(), metricsAttrs, gCfg.SemConv)
 	}
 
 	var t *tracesHTTP

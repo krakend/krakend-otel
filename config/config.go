@@ -144,6 +144,7 @@ type GlobalOpts struct {
 	ReportHeaders           bool       `json:"report_headers"`
 	MetricsStaticAttributes Attributes `json:"metrics_static_attributes"`
 	TracesStaticAttributes  Attributes `json:"traces_static_attributes"`
+	SemConv                 string     `json:"semantic_convention"`
 }
 
 // PipeOpts has the options for the KrakenD pipe stage

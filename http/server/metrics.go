@@ -19,7 +19,7 @@ type metricsHTTP struct {
 	size    metric.Int64Histogram   // the response size
 }
 
-type metricsFiller func(metricsHTTP, metric.Meter)
+type metricsFiller func(*metricsHTTP, metric.Meter)
 
 func newMetricsHTTP(meter metric.Meter, attrs []attribute.KeyValue, semconv string) *metricsHTTP {
 	var m metricsHTTP
@@ -60,7 +60,7 @@ func noSemConvMetricsFiller(m *metricsHTTP, meter metric.Meter) {
 	m.size, _ = meter.Int64Histogram("http.server.response.size", kotelconfig.SizeBucketsOpt)
 }
 
-func semConv1_27MetricsFiller() {
+func semConv1_27MetricsFiller(m *metricsHTTP, meter metric.Meter) {
 	m.latency, _ = meter.Float64Histogram(v127.HTTPServerRequestDurationName,
 		metric.WithUnit(v127.HTTPServerRequestDurationUnit),
 		metric.WithDescription(v127.HTTPServerRequestDurationDescription),
