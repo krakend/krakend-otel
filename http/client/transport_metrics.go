@@ -155,7 +155,9 @@ func newTransportMetrics(metricsOpts *TransportMetricsOptions, meter metric.Mete
 		"":     noSemConvMetricsFiller,
 		"1.27": semConv1_27MetricsFiller,
 	}
-	var tm transportMetrics
+	tm := transportMetrics{
+		clientName: clientName,
+	}
 	filler := noSemConvMetricsFiller
 	if versionFiller, ok := supportedSemConv[metricsOpts.SemConv]; ok {
 		filler = versionFiller
@@ -175,8 +177,8 @@ func (m *transportMetrics) report(rtt *roundTripTracking, attrs []attribute.KeyV
 	if len(m.clientName) > 0 {
 		attrM = append(attrM, attribute.Key("clientname").String(m.clientName))
 	}
-	attrM = append(attrM, semconv.HTTPRequestMethodKey.String(rtt.req.Method))
-	attrM = append(attrM, semconv.ServerAddress(rtt.req.RemoteAddr))
+	attrM = append(attrM, semconv.HTTPRequestMethodKey.String(rtt.req.Method),
+		semconv.ServerAddress(rtt.req.RemoteAddr))
 
 	statusCode := 0
 	if rtt.err == nil {

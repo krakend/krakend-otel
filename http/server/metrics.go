@@ -47,9 +47,9 @@ func (m *metricsHTTP) report(t *tracking, r *http.Request) {
 		return
 	}
 	dynAttrs := t.metricsStaticAttrs
-	dynAttrs = append(dynAttrs, semconv.HTTPRoute(t.EndpointPattern()))
-	dynAttrs = append(dynAttrs, semconv.HTTPRequestMethodKey.String(r.Method))
-	dynAttrs = append(dynAttrs, semconv.HTTPResponseStatusCode(t.responseStatus))
+	dynAttrs = append(dynAttrs, semconv.HTTPRoute(t.EndpointPattern()),
+		semconv.HTTPRequestMethodKey.String(r.Method),
+		semconv.HTTPResponseStatusCode(t.responseStatus))
 	dynAttrsOpts := metric.WithAttributes(dynAttrs...)
 	m.latency.Record(t.ctx, t.latencyInSecs, m.fixedAttrsOpts, dynAttrsOpts)
 	m.size.Record(t.ctx, int64(t.responseSize), m.fixedAttrsOpts, dynAttrsOpts)
