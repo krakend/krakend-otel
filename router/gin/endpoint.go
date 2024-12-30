@@ -28,7 +28,6 @@ func New(hf krakendgin.HandlerFactory) krakendgin.HandlerFactory {
 		var tracesAttrs []attribute.KeyValue
 
 		cfgExtra, err := kotelconfig.LuraLayerExtraCfg(cfg.ExtraConfig)
-		// check that in this "layers" level, we can still set the attributes
 		if err == nil && cfgExtra.Global != nil {
 			for _, kv := range cfgExtra.Global.MetricsStaticAttributes {
 				if len(kv.Key) > 0 && len(kv.Value) > 0 {
