@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"net/http"
 	"strconv"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -171,44 +172,9 @@ func newTransportMetrics(metricsOpts *TransportMetricsOptions, meter metric.Mete
 
 func (m *transportMetrics) report(rtt *roundTripTracking, attrs []attribute.KeyValue) {
 	if m == nil || m.requestsStarted == nil {
-		// if metrics are nil or not initialized, we just return
 		return
 	}
-
-	attrM := make([]attribute.KeyValue, len(attrs), len(attrs)+4)
-	copy(attrM, attrs)
-	if len(m.clientName) > 0 {
-		attrM = append(attrM, attribute.Key("clientname").String(m.clientName))
-	}
-
-	serverAddress := rtt.req.Host
-	serverPort := int(80)
-	if rtt.req.URL != nil {
-		serverAddress = rtt.req.URL.Hostname()
-		strPort := rtt.req.URL.Port()
-		if p, err := strconv.ParseInt(strPort, 10, 32); err != nil {
-			serverPort = int(p)
-		}
-	}
-
-	statusCode := 0
-	if rtt.err == nil {
-		// if we fail on the client side, we do not have a status code, but we
-		// want it set to 0 to be displayed on the dashboard
-		statusCode = int(rtt.resp.StatusCode)
-	}
-
-	attrM = append(attrM,
-		semconv.HTTPRequestMethodKey.String(rtt.req.Method), // required
-		// this is wrong, as the RemoteAddr is ignored when the request is used
-		// for a client (is filled by the server side):
-		// semconv.ServerAddress(rtt.req.RemoteAddr),
-		semconv.ServerAddress(serverAddress),       // required by sem conv 1.29
-		semconv.ServerPort(serverPort),             // required by sem conv 1.29
-		semconv.HTTPResponseStatusCode(statusCode), // required if received
-	)
-	attrOpt := metric.WithAttributeSet(attribute.NewSet(attrM...))
-
+	attrOpt := m.attributesOption(rtt, attrs)
 	ctx := rtt.req.Context()
 
 	m.requestsStarted.Add(ctx, 1, attrOpt)
@@ -256,4 +222,46 @@ func (m *transportMetrics) report(rtt *roundTripTracking, attrs []attribute.KeyV
 		m.dnsLatency.Record(ctx, rtt.dnsLatency, attrOpt)
 		m.tlsLatency.Record(ctx, rtt.tlsLatency, attrOpt)
 	}
+}
+
+func (m *transportMetrics) attributesOption(rtt *roundTripTracking, attrs []attribute.KeyValue) metric.MeasurementOption {
+	numAttrs := len(attrs) + 4 + 1 // static attrs + required attributes + clientname
+	attrM := make([]attribute.KeyValue, len(attrs), numAttrs)
+	copy(attrM, attrs)
+	if len(m.clientName) > 0 {
+		attrM = append(attrM, attribute.Key("clientname").String(m.clientName))
+	}
+
+	serverAddress, serverPort := requestServerAndPort(rtt.req)
+
+	statusCode := 0
+	if rtt.err == nil {
+		// if we fail on the client side, we do not have a status code, but we
+		// want it set to 0 to be displayed on the dashboard
+		statusCode = int(rtt.resp.StatusCode)
+	}
+
+	attrM = append(attrM,
+		semconv.HTTPRequestMethodKey.String(rtt.req.Method), // required
+		// this is wrong, as the RemoteAddr is ignored when the request is used
+		// for a client (is filled by the server side):
+		// semconv.ServerAddress(rtt.req.RemoteAddr),
+		semconv.ServerAddress(serverAddress),       // required by sem conv 1.29
+		semconv.ServerPort(serverPort),             // required by sem conv 1.29
+		semconv.HTTPResponseStatusCode(statusCode), // required if received
+	)
+	return metric.WithAttributeSet(attribute.NewSet(attrM...))
+}
+
+func requestServerAndPort(r *http.Request) (string, int) {
+	serverAddress := r.Host
+	serverPort := int(80)
+	if r.URL != nil {
+		serverAddress = r.URL.Hostname()
+		strPort := r.URL.Port()
+		if p, err := strconv.ParseInt(strPort, 10, 32); err != nil {
+			serverPort = int(p)
+		}
+	}
+	return serverAddress, serverPort
 }
