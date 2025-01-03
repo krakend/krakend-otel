@@ -46,7 +46,7 @@ func newMetricsHTTP(meter metric.Meter, attrs []attribute.KeyValue, semconv stri
 // validMethod allows us to limit the different valid methods to avoid
 // a client with bad intentions to keep using weird methods and blow up
 // the cardinality of the metrics
-func (m *metricsHTTP) validMethod(r *http.Request) string {
+func validMethod(r *http.Request) string {
 	valid := map[string]bool{
 		"_OTHER":  true,
 		"CONNECT": true,
@@ -78,10 +78,10 @@ func (m *metricsHTTP) report(t *tracking, r *http.Request) {
 	// https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#http-server
 	dynAttrs := t.metricsStaticAttrs
 	dynAttrs = append(dynAttrs,
-		semconv.HTTPRequestMethodKey.String(m.validMethod(r)), // required attribute
-		semconv.URLScheme(urlScheme),                          // required attribute
-		semconv.HTTPRoute(t.EndpointPattern()),                // required if available
-		semconv.HTTPResponseStatusCode(t.responseStatus))      // required if was sent
+		semconv.HTTPRequestMethodKey.String(validMethod(r)), // required attribute
+		semconv.URLScheme(urlScheme),                        // required attribute
+		semconv.HTTPRoute(t.EndpointPattern()),              // required if available
+		semconv.HTTPResponseStatusCode(t.responseStatus))    // required if was sent
 	dynAttrsOpts := metric.WithAttributes(dynAttrs...)
 
 	m.latency.Record(t.ctx, t.latencyInSecs, m.fixedAttrsOpts, dynAttrsOpts)
