@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -98,6 +99,8 @@ func semConv1_27MetricsFiller(metricsOpts *TransportMetricsOptions, meter metric
 		metric.WithDescription(v127.HTTPClientRequestBodySizeDescription),
 		kotelconfig.SizeBucketsOpt) // the value of the Content-Length header for the request
 
+	// this is `http.client.request.duration`, and is a required metric:
+	// https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpclientrequestduration
 	tm.responseLatency, _ = meter.Float64Histogram(v127.HTTPClientRequestDurationName,
 		metric.WithUnit(v127.HTTPClientRequestDurationUnit),
 		metric.WithDescription(v127.HTTPClientRequestDurationDescription),
@@ -177,8 +180,16 @@ func (m *transportMetrics) report(rtt *roundTripTracking, attrs []attribute.KeyV
 	if len(m.clientName) > 0 {
 		attrM = append(attrM, attribute.Key("clientname").String(m.clientName))
 	}
-	attrM = append(attrM, semconv.HTTPRequestMethodKey.String(rtt.req.Method),
-		semconv.ServerAddress(rtt.req.RemoteAddr))
+
+	serverAddress := rtt.req.Host
+	serverPort := int(80)
+	if rtt.req.URL != nil {
+		serverAddress = rtt.req.URL.Hostname()
+		strPort := rtt.req.URL.Port()
+		if p, err := strconv.ParseInt(strPort, 10, 32); err != nil {
+			serverPort = int(p)
+		}
+	}
 
 	statusCode := 0
 	if rtt.err == nil {
@@ -186,15 +197,25 @@ func (m *transportMetrics) report(rtt *roundTripTracking, attrs []attribute.KeyV
 		// want it set to 0 to be displayed on the dashboard
 		statusCode = int(rtt.resp.StatusCode)
 	}
-	attrM = append(attrM, semconv.HTTPResponseStatusCode(statusCode))
+
+	attrM = append(attrM,
+		semconv.HTTPRequestMethodKey.String(rtt.req.Method), // required
+		// this is wrong, as the RemoteAddr is ignored when the request is used
+		// for a client (is filled by the server side):
+		// semconv.ServerAddress(rtt.req.RemoteAddr),
+		semconv.ServerAddress(serverAddress),       // required by sem conv 1.29
+		semconv.ServerPort(serverPort),             // required by sem conv 1.29
+		semconv.HTTPResponseStatusCode(statusCode), // required if received
+	)
 	attrOpt := metric.WithAttributeSet(attribute.NewSet(attrM...))
 
 	ctx := rtt.req.Context()
 
 	m.requestsStarted.Add(ctx, 1, attrOpt)
 	if rtt.req.ContentLength >= 0 {
-		// TOOD: should we check the http verb / method to report this ?
 		m.requestContentLength.Add(ctx, rtt.req.ContentLength, attrOpt)
+		// the content-length is optional and experimental for 1.27 and also 1.29 sem conv:
+		// https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpclientrequestbodysize
 		m.requestContentLengthHist.Record(ctx, rtt.req.ContentLength, attrOpt)
 	}
 
@@ -215,11 +236,15 @@ func (m *transportMetrics) report(rtt *roundTripTracking, attrs []attribute.KeyV
 		}
 	}
 
+	// the `http.client.request.duration` is required for semconv 1.27 and 1.29
 	m.responseLatency.Record(ctx, rtt.latencyInSecs, attrOpt)
+
 	if rtt.req.Method != "HEAD" && rtt.resp != nil {
 		if rtt.resp.ContentLength >= 0 {
 			// it might be the case were we receive a chunked response, and then
 			// we will not record a metric for it.
+			// the `http.client.response.body.size` is optional and experimental
+			// for semconv 1.27 and 1.29
 			m.responseContentLength.Record(ctx, rtt.resp.ContentLength, attrOpt)
 		} else {
 			m.responseNoContentLength.Add(ctx, 1, attrOpt)
