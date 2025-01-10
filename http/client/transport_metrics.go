@@ -62,7 +62,7 @@ type transportMetrics struct {
 	clientName string
 }
 
-type metricFillerFn func(metricsOpts *TransportMetricsOptions, meter metric.Meter, tm *transportMetrics)
+type metricFillerFn func(*TransportMetricsOptions, metric.Meter, *transportMetrics)
 
 func noSemConvMetricsFiller(metricsOpts *TransportMetricsOptions, meter metric.Meter, tm *transportMetrics) {
 	nopMeter := noop.Meter{}
@@ -137,17 +137,17 @@ func semConv1_27MetricsFiller(metricsOpts *TransportMetricsOptions, meter metric
 			metric.WithUnit(v127.HTTPClientRequestDurationUnit),
 			metric.WithDescription("Time spent on TLS negotiation and connection"),
 			kotelconfig.TimeBucketsOpt)
-	} else {
-		tm.requestsStarted, _ = nopMeter.Int64Counter("http.client.request.started.count")   // number of reqs started
-		tm.requestsFailed, _ = nopMeter.Int64Counter("http.client.request.failed.count")     // number of reqs failed
-		tm.requestsCanceled, _ = nopMeter.Int64Counter("http.client.request.canceled.count") // number of canceled requests
-		tm.requestsTimedOut, _ = nopMeter.Int64Counter("http.client.request.timedout.count") // numer of timedout request (inclued in failed)
-
-		tm.responseNoContentLength, _ = nopMeter.Int64Counter("http.client.response.no-content-length")
-		tm.getConnLatency, _ = nopMeter.Float64Histogram("http.client.request.get-conn.duration")
-		tm.dnsLatency, _ = nopMeter.Float64Histogram("http.client.request.dns.duration")
-		tm.tlsLatency, _ = nopMeter.Float64Histogram("http.client.request.tls.duration")
+		return
 	}
+	tm.requestsStarted, _ = nopMeter.Int64Counter("http.client.request.started.count")   // number of reqs started
+	tm.requestsFailed, _ = nopMeter.Int64Counter("http.client.request.failed.count")     // number of reqs failed
+	tm.requestsCanceled, _ = nopMeter.Int64Counter("http.client.request.canceled.count") // number of canceled requests
+	tm.requestsTimedOut, _ = nopMeter.Int64Counter("http.client.request.timedout.count") // numer of timedout request (inclued in failed)
+
+	tm.responseNoContentLength, _ = nopMeter.Int64Counter("http.client.response.no-content-length")
+	tm.getConnLatency, _ = nopMeter.Float64Histogram("http.client.request.get-conn.duration")
+	tm.dnsLatency, _ = nopMeter.Float64Histogram("http.client.request.dns.duration")
+	tm.tlsLatency, _ = nopMeter.Float64Histogram("http.client.request.tls.duration")
 }
 
 func newTransportMetrics(metricsOpts *TransportMetricsOptions, meter metric.Meter, clientName string) *transportMetrics {
