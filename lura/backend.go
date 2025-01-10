@@ -52,6 +52,11 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 		return clientFactory
 	}
 
+	strictSemConv := ""
+	if g := otelCfg.GlobalOpts(); g != nil {
+		strictSemConv = g.SemConv
+	}
+
 	opts := otelCfg.BackendOpts(cfg)
 	if !opts.Enabled() {
 		return clientFactory
@@ -99,6 +104,7 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 			ReadPayload:        opts.Metrics.ReadPayload,
 			DetailedConnection: opts.Metrics.DetailedConnection,
 			FixedAttributes:    metricAttrs,
+			SemConv:            strictSemConv,
 		},
 		TracesOpts: clienthttp.TransportTracesOptions{
 			RoundTrip:          opts.Traces.RoundTrip,
