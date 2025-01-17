@@ -124,8 +124,14 @@ func newTransport(base http.RoundTripper, metricsOpts TransportMetricsOptions,
 		return nil
 	}
 
-	meter := otelState.Meter()
-	tracer := otelState.Tracer()
+	var meter metric.Meter
+	if metricsOpts.Enabled() {
+		meter = otelState.Meter()
+	}
+	var tracer trace.Tracer
+	if tracesOpts.Enabled() {
+		tracer = otelState.Tracer()
+	}
 
 	return &Transport{
 		base:          base,
