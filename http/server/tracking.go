@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"net/http"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -35,13 +37,13 @@ type tracking struct {
 }
 
 func (t *tracking) EndpointPattern() string {
-	if len(t.endpointPattern) == 0 {
-		if t.isHijacked {
-			return "Upgraded Connection"
-		}
-		return "404 Not Found"
+	if t.endpointPattern != "" {
+		return t.endpointPattern
 	}
-	return t.endpointPattern
+	if t.isHijacked {
+		return "Upgraded Connection"
+	}
+	return strconv.Itoa(t.responseStatus) + " " + http.StatusText(t.responseStatus)
 }
 
 func (t *tracking) MetricsStaticAttributes() []attribute.KeyValue {
