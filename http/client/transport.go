@@ -73,7 +73,7 @@ func readWrapperBuilder(metricsOpts *TransportMetricsOptions, tracesOpts *Transp
 ) readerWrapperFn {
 	if !metricsOpts.ReadPayload && !tracesOpts.ReadPayload {
 		// no metrics or traces for the payload reading
-		return func(r io.Reader, ctx context.Context) io.ReadCloser {
+		return func(r io.Reader, _ context.Context) io.ReadCloser {
 			rc, ok := r.(io.ReadCloser)
 			if !ok {
 				rc = io.NopCloser(r)
@@ -124,8 +124,14 @@ func newTransport(base http.RoundTripper, metricsOpts TransportMetricsOptions,
 		return nil
 	}
 
-	meter := otelState.Meter()
-	tracer := otelState.Tracer()
+	var meter metric.Meter
+	if metricsOpts.Enabled() {
+		meter = otelState.Meter()
+	}
+	var tracer trace.Tracer
+	if tracesOpts.Enabled() {
+		tracer = otelState.Tracer()
+	}
 
 	return &Transport{
 		base:          base,
