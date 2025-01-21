@@ -37,6 +37,10 @@ type transportTraces struct {
 }
 
 func newTransportTraces(tracesOpts *TransportTracesOptions, tracer trace.Tracer, spanName string) *transportTraces {
+	if tracer == nil {
+		return nil
+	}
+
 	return &transportTraces{
 		tracer:             tracer,
 		spanName:           spanName,
