@@ -63,20 +63,11 @@ func LuraExtraCfg(extraCfg luraconfig.ExtraConfig) (*ConfigData, error) {
 }
 
 func LuraLayerExtraCfg(extraCfg luraconfig.ExtraConfig) (*LayersOpts, error) {
-	tmp, ok := extraCfg[Namespace]
-	if !ok {
-		return nil, ErrNoConfig
-	}
+	cfg, err := LuraExtraCfg(extraCfg)
 
-	buf := new(bytes.Buffer)
-	if err := json.NewEncoder(buf).Encode(tmp); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
-	cfg := new(LayersOpts)
-	if err := json.NewDecoder(buf).Decode(cfg); err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
+	return cfg.Layers, nil
 }

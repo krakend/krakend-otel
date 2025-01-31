@@ -66,7 +66,7 @@ func TestEndpointPipeNoOverride(t *testing.T) {
 		return
 	}
 
-	if len(pipeOpts.MetricsStaticAttributes) > 1 {
+	if len(pipeOpts.MetricsStaticAttributes) != 1 {
 		t.Errorf(
 			"Incorrect number of attributes for metrics. returned: %+v",
 			pipeOpts.MetricsStaticAttributes,
@@ -88,7 +88,7 @@ func TestEndpointPipeConfigOnlyOverride(t *testing.T) {
 
 	pipeOpts := stateCfg.EndpointPipeOpts(pipeCfg)
 
-	if len(pipeOpts.MetricsStaticAttributes) > 1 {
+	if len(pipeOpts.MetricsStaticAttributes) != 1 {
 		t.Errorf(
 			"Incorrect number of attributes for metrics. returned: %+v",
 			pipeOpts.MetricsStaticAttributes,
@@ -169,7 +169,7 @@ func TestBackendConfigNoOverride(t *testing.T) {
 		return
 	}
 
-	if len(backendOpts.Metrics.StaticAttributes) > 1 {
+	if len(backendOpts.Metrics.StaticAttributes) != 1 {
 		t.Errorf(
 			"Incorrect number of attributes for metrics. returned: %+v",
 			backendOpts.Traces.StaticAttributes,
