@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -58,7 +59,21 @@ func httpExporterWithOptions(ctx context.Context, cfg config.OTLPExporter,
 	}
 
 	endpoint := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	switch u.Scheme {
+	case "http":
+		tOpts = append(tOpts, otlptracehttp.WithInsecure())
+		endpoint = u.Host
+	case "https":
+		endpoint = u.Host
+	default:
+		tOpts = append(tOpts, otlptracehttp.WithInsecure())
+	}
 	tOpts = append(tOpts, otlptracehttp.WithEndpoint(endpoint))
+
 	exporter, err := otlptracehttp.New(ctx, tOpts...)
 	if err != nil {
 		return nil, errors.New("cannot create http trace exporter:" + err.Error())
@@ -93,7 +108,21 @@ func grpcExporterWithOptions(ctx context.Context, cfg config.OTLPExporter,
 	}
 
 	endpoint := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	switch u.Scheme {
+	case "http":
+		tOpts = append(tOpts, otlptracegrpc.WithInsecure())
+		endpoint = u.Host
+	case "https":
+		endpoint = u.Host
+	default:
+		tOpts = append(tOpts, otlptracegrpc.WithInsecure())
+	}
 	tOpts = append(tOpts, otlptracegrpc.WithEndpoint(endpoint))
+
 	exporter, err := otlptracegrpc.New(ctx, tOpts...)
 	if err != nil {
 		return nil, errors.New("cannot create grpc traces exporter")
@@ -128,9 +157,7 @@ func ExporterWithOptions(ctx context.Context, cfg config.OTLPExporter, options [
 
 // Exporter creates an Open Telemetry exporter instance.
 func Exporter(ctx context.Context, cfg config.OTLPExporter) (*OtelCollector, error) {
-	options := make([]interface{}, 0, 2)
 	// by default, grpc conections have TLS enabled:
-	options = append(options, otlptracegrpc.WithInsecure())
-	options = append(options, otlpmetricgrpc.WithInsecure())
+	options := []interface{}{otlptracegrpc.WithInsecure(), otlpmetricgrpc.WithInsecure()}
 	return ExporterWithOptions(ctx, cfg, options)
 }
