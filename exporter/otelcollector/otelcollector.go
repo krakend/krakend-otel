@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -59,17 +60,19 @@ func httpExporterWithOptions(ctx context.Context, cfg config.OTLPExporter,
 	}
 
 	endpoint := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		return nil, err
-	}
-	switch u.Scheme {
-	case "http":
-		tOpts = append(tOpts, otlptracehttp.WithInsecure())
-		endpoint = u.Host
-	case "https":
-		endpoint = u.Host
-	default:
+	if strings.HasPrefix(endpoint, "http://") || strings.HasPrefix(endpoint, "https://") {
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			return nil, err
+		}
+		switch u.Scheme {
+		case "http":
+			tOpts = append(tOpts, otlptracehttp.WithInsecure())
+			endpoint = u.Host
+		case "https":
+			endpoint = u.Host
+		}
+	} else {
 		tOpts = append(tOpts, otlptracehttp.WithInsecure())
 	}
 	tOpts = append(tOpts, otlptracehttp.WithEndpoint(endpoint))
@@ -108,17 +111,19 @@ func grpcExporterWithOptions(ctx context.Context, cfg config.OTLPExporter,
 	}
 
 	endpoint := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		return nil, err
-	}
-	switch u.Scheme {
-	case "http":
-		tOpts = append(tOpts, otlptracegrpc.WithInsecure())
-		endpoint = u.Host
-	case "https":
-		endpoint = u.Host
-	default:
+	if strings.HasPrefix(endpoint, "http://") || strings.HasPrefix(endpoint, "https://") {
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			return nil, err
+		}
+		switch u.Scheme {
+		case "http":
+			tOpts = append(tOpts, otlptracegrpc.WithInsecure())
+			endpoint = u.Host
+		case "https":
+			endpoint = u.Host
+		}
+	} else {
 		tOpts = append(tOpts, otlptracegrpc.WithInsecure())
 	}
 	tOpts = append(tOpts, otlptracegrpc.WithEndpoint(endpoint))
