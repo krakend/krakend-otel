@@ -74,7 +74,6 @@ func httpExporterWithOptions(ctx context.Context, cfg config.OTLPExporter,
 		}
 	} else {
 		tOpts = append(tOpts, otlptracehttp.WithInsecure())
-
 	}
 	tOpts = append(tOpts, otlptracehttp.WithEndpoint(endpoint))
 
