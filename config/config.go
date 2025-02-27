@@ -108,12 +108,13 @@ func (e *Exporters) Validate() error {
 }
 
 type OTLPExporter struct {
-	Name           string `json:"name"`
-	Host           string `json:"host"`
-	Port           int    `json:"port"`
-	UseHTTP        bool   `json:"use_http"`
-	DisableMetrics bool   `json:"disable_metrics"`
-	DisableTraces  bool   `json:"disable_traces"`
+	Name                        string `json:"name"`
+	Host                        string `json:"host"`
+	Port                        int    `json:"port"`
+	UseHTTP                     bool   `json:"use_http"`
+	DisableMetrics              bool   `json:"disable_metrics"`
+	DisableTraces               bool   `json:"disable_traces"`
+	CustomMetricReportingPeriod uint   `json:"custom_reporting_period"`
 }
 
 type PrometheusExporter struct {
