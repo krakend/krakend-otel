@@ -114,7 +114,7 @@ type OTLPExporter struct {
 	UseHTTP                     bool   `json:"use_http"`
 	DisableMetrics              bool   `json:"disable_metrics"`
 	DisableTraces               bool   `json:"disable_traces"`
-	CustomMetricReportingPeriod uint   `json:"custom_reporting_period"`
+	CustomMetricReportingPeriod uint   `json:"custom_metric_reporting_period"`
 }
 
 type PrometheusExporter struct {
