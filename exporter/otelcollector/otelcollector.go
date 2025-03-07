@@ -68,12 +68,14 @@ func httpExporterWithOptions(ctx context.Context, cfg config.OTLPExporter,
 		switch u.Scheme {
 		case "http":
 			tOpts = append(tOpts, otlptracehttp.WithInsecure())
+			mOpts = append(mOpts, otlpmetrichttp.WithInsecure())
 			endpoint = u.Host
 		case "https":
 			endpoint = u.Host
 		}
 	} else {
 		tOpts = append(tOpts, otlptracehttp.WithInsecure())
+		mOpts = append(mOpts, otlpmetrichttp.WithInsecure())
 	}
 	tOpts = append(tOpts, otlptracehttp.WithEndpoint(endpoint))
 
@@ -119,12 +121,14 @@ func grpcExporterWithOptions(ctx context.Context, cfg config.OTLPExporter,
 		switch u.Scheme {
 		case "http":
 			tOpts = append(tOpts, otlptracegrpc.WithInsecure())
+			mOpts = append(mOpts, otlpmetricgrpc.WithInsecure())
 			endpoint = u.Host
 		case "https":
 			endpoint = u.Host
 		}
 	} else {
 		tOpts = append(tOpts, otlptracegrpc.WithInsecure())
+		mOpts = append(mOpts, otlpmetricgrpc.WithInsecure())
 	}
 	tOpts = append(tOpts, otlptracegrpc.WithEndpoint(endpoint))
 
