@@ -21,10 +21,11 @@ import (
 
 // OtelCollector implements the traces exporter.
 type OtelCollector struct {
-	exporter                 sdktrace.SpanExporter
-	metricExporter           sdkmetric.Exporter
-	metricsDisabledByDefault bool
-	tracesDisabledByDefault  bool
+	exporter                    sdktrace.SpanExporter
+	metricExporter              sdkmetric.Exporter
+	metricsDisabledByDefault    bool
+	tracesDisabledByDefault     bool
+	customMetricReportingPeriod time.Duration
 }
 
 // SpanExporter implements the interface to export traces.
@@ -33,6 +34,9 @@ func (c *OtelCollector) SpanExporter() sdktrace.SpanExporter {
 }
 
 func (c *OtelCollector) MetricReader(reportingPeriod time.Duration) sdkmetric.Reader {
+	if c.customMetricReportingPeriod >= time.Second {
+		reportingPeriod = c.customMetricReportingPeriod
+	}
 	return sdkmetric.NewPeriodicReader(c.metricExporter,
 		sdkmetric.WithInterval(reportingPeriod))
 }
@@ -91,10 +95,11 @@ func httpExporterWithOptions(ctx context.Context, cfg config.OTLPExporter,
 	}
 
 	return &OtelCollector{
-		exporter:                 exporter,
-		metricExporter:           metricExporter,
-		metricsDisabledByDefault: cfg.DisableMetrics,
-		tracesDisabledByDefault:  cfg.DisableTraces,
+		exporter:                    exporter,
+		metricExporter:              metricExporter,
+		metricsDisabledByDefault:    cfg.DisableMetrics,
+		tracesDisabledByDefault:     cfg.DisableTraces,
+		customMetricReportingPeriod: time.Duration(cfg.CustomMetricReportingPeriod) * time.Second,
 	}, nil
 }
 
@@ -143,10 +148,11 @@ func grpcExporterWithOptions(ctx context.Context, cfg config.OTLPExporter,
 	}
 
 	return &OtelCollector{
-		exporter:                 exporter,
-		metricExporter:           metricExporter,
-		metricsDisabledByDefault: cfg.DisableMetrics,
-		tracesDisabledByDefault:  cfg.DisableTraces,
+		exporter:                    exporter,
+		metricExporter:              metricExporter,
+		metricsDisabledByDefault:    cfg.DisableMetrics,
+		tracesDisabledByDefault:     cfg.DisableTraces,
+		customMetricReportingPeriod: time.Duration(cfg.CustomMetricReportingPeriod) * time.Second,
 	}, nil
 }
 
