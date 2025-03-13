@@ -1,7 +1,8 @@
 module github.com/krakend/krakend-otel
 
-go 1.22.0
-toolchain go1.23.3
+go 1.23.0
+
+toolchain go1.23.6
 
 require (
 	github.com/gin-gonic/gin v1.9.1
