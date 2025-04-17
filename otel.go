@@ -56,7 +56,8 @@ func RegisterWithConfig(ctx context.Context, l logging.Logger, cfg *config.Confi
 		return shutdownFn, err
 	}
 	exporter.SetGlobalExporterInstances(me, te)
-	shutdown, err := RegisterGlobalInstance(ctx, l, me, te, *cfg.MetricReportingPeriod, *cfg.TraceSampleRate, cfg.ServiceName, cfg.ServiceVersion)
+	shutdown, err := RegisterGlobalInstanceWithEnv(ctx, l, me, te, *cfg.MetricReportingPeriod,
+		*cfg.TraceSampleRate, cfg.ServiceName, cfg.ServiceVersion, cfg.DeployEnv)
 	if err == nil {
 		state.SetGlobalConfig(state.NewConfig(cfg))
 	}
@@ -67,6 +68,16 @@ func RegisterWithConfig(ctx context.Context, l logging.Logger, cfg *config.Confi
 func RegisterGlobalInstance(ctx context.Context, l logging.Logger,
 	me map[string]exporter.MetricReader, te map[string]exporter.SpanExporter,
 	metricReportingPeriod int, traceSampleRate float64, serviceName string, serviceVersion string,
+) (func(), error) {
+	return RegisterGlobalInstanceWithEnv(ctx, l, me, te, metricReportingPeriod,
+		traceSampleRate, serviceName, serviceVersion, "")
+}
+
+// RegisterGlobalInstanceWithEnv creates the instance that will be used to report metrics and traces
+func RegisterGlobalInstanceWithEnv(ctx context.Context, l logging.Logger,
+	me map[string]exporter.MetricReader, te map[string]exporter.SpanExporter,
+	metricReportingPeriod int, traceSampleRate float64, serviceName string, serviceVersion string,
+	env string,
 ) (func(), error) {
 	shutdownFn := func() {}
 	prop := propagation.NewCompositeTextMapPropagator(
@@ -103,7 +114,7 @@ func RegisterGlobalInstance(ctx context.Context, l logging.Logger,
 		version = lcore.KrakendVersion
 	}
 
-	s, err := state.NewWithVersion(serviceName, globalStateCfg, version, me, te)
+	s, err := state.NewWithVersionAndEnv(serviceName, globalStateCfg, version, env, me, te)
 	if err != nil {
 		return shutdownFn, err
 	}

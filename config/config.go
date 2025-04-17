@@ -11,6 +11,7 @@ import (
 type ConfigData struct {
 	ServiceName           string      `json:"service_name"`
 	ServiceVersion        string      `json:"service_version"`
+	DeployEnv             string      `json:"deploy_env"`
 	Layers                *LayersOpts `json:"layers"`
 	Exporters             Exporters   `json:"exporters"`
 	SkipPaths             []string    `json:"skip_paths"`
