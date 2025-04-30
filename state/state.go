@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/propagation"
@@ -64,10 +65,22 @@ type OTELState struct {
 func NewWithVersion(serviceName string, cfg *OTELStateConfig, version string,
 	me map[string]exporter.MetricReader, te map[string]exporter.SpanExporter,
 ) (*OTELState, error) {
-	res := sdkresource.NewWithAttributes(
-		semconv.SchemaURL,
+	return NewWithVersionAndEnv(serviceName, cfg, version, "", me, te)
+}
+
+// NewWithVersionAndEnv create a new OTELState with a version for
+// the KrakenD service, with the provided metrics and traces exporters
+func NewWithVersionAndEnv(serviceName string, cfg *OTELStateConfig, version string,
+	env string, me map[string]exporter.MetricReader, te map[string]exporter.SpanExporter,
+) (*OTELState, error) {
+	sdkAttrs := []attribute.KeyValue{
 		semconv.ServiceName(serviceName),
-		semconv.ServiceVersion(version))
+		semconv.ServiceVersion(version),
+	}
+	if env != "" {
+		sdkAttrs = append(sdkAttrs, semconv.DeploymentEnvironment(env))
+	}
+	res := sdkresource.NewWithAttributes(semconv.SchemaURL, sdkAttrs...)
 
 	reportingPeriod := time.Duration(cfg.MetricReportingPeriod) * time.Second
 	metricOpts := make([]sdkmetric.Option, 0, len(cfg.MetricProviders)+2)
