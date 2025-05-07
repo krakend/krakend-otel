@@ -17,7 +17,6 @@ func TraceRequestAttrs(r *http.Request) []attribute.KeyValue {
 }
 
 func TraceRequestAttrsWithTrustedProxies(r *http.Request, trustedProxies map[string]bool) []attribute.KeyValue {
-
 	attrs := make([]attribute.KeyValue, 0, 8)
 	attrs = append(attrs,
 		semconv.URLFull(r.URL.String()),
