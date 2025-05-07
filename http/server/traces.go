@@ -13,21 +13,29 @@ import (
 )
 
 type tracesHTTP struct {
-	tracer        trace.Tracer
-	fixedAttrs    []attribute.KeyValue
-	reportHeaders bool
+	tracer         trace.Tracer
+	fixedAttrs     []attribute.KeyValue
+	reportHeaders  bool
+	trustedProxies map[string]bool
 }
 
-func newTracesHTTP(tracer trace.Tracer, attrs []attribute.KeyValue, reportHeaders bool) *tracesHTTP {
+func newTracesHTTP(tracer trace.Tracer, attrs []attribute.KeyValue,
+	reportHeaders bool, trustedProxies []string) *tracesHTTP {
 	var fa []attribute.KeyValue
 	if len(attrs) > 0 {
 		fa = make([]attribute.KeyValue, len(attrs))
 		copy(fa, attrs)
 	}
+	tpm := make(map[string]bool, len(trustedProxies))
+	for _, tp := range trustedProxies {
+		ip := strings.TrimSpace(tp)
+		tpm[ip] = true
+	}
 	return &tracesHTTP{
-		tracer:        tracer,
-		fixedAttrs:    fa,
-		reportHeaders: reportHeaders,
+		tracer:         tracer,
+		fixedAttrs:     fa,
+		reportHeaders:  reportHeaders,
+		trustedProxies: tpm,
 	}
 }
 
@@ -38,9 +46,17 @@ func (t *tracesHTTP) start(r *http.Request, tr *tracking) *http.Request {
 	if t == nil || t.tracer == nil || r.URL == nil {
 		return r
 	}
-	tr.ctx, tr.span = t.tracer.Start(r.Context(), r.URL.Path, trace.WithSpanKind(trace.SpanKindServer))
+	tr.ctx, tr.span = t.tracer.Start(r.Context(), r.URL.Path,
+		trace.WithSpanKind(trace.SpanKindServer))
 	r = r.WithContext(tr.ctx)
-	attrs := otelhttp.TraceRequestAttrs(r)
+
+	var attrs []attribute.KeyValue
+	if len(t.trustedProxies) > 0 {
+		attrs = otelhttp.TraceRequestAttrsWithTrustedProxies(r, t.trustedProxies)
+	} else {
+		attrs = otelhttp.TraceRequestAttrs(r)
+	}
+
 	tr.span.SetAttributes(attrs...)
 	if len(t.fixedAttrs) > 0 {
 		tr.span.SetAttributes(t.fixedAttrs...)

@@ -57,6 +57,10 @@ func (h *trackingHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 }
 
 func NewTrackingHandler(next http.Handler) http.Handler {
+	return NewTrackingHandlerWithTrustedProxies(next, nil)
+}
+
+func NewTrackingHandlerWithTrustedProxies(next http.Handler, trustedProxies []string) http.Handler {
 	otelCfg := state.GlobalConfig()
 	if otelCfg == nil {
 		return next
@@ -93,7 +97,7 @@ func NewTrackingHandler(next http.Handler) http.Handler {
 			}
 		}
 
-		t = newTracesHTTP(s.Tracer(), tracesAttrs, gCfg.ReportHeaders)
+		t = newTracesHTTP(s.Tracer(), tracesAttrs, gCfg.ReportHeaders, trustedProxies)
 	}
 
 	return &trackingHandler{
