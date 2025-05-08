@@ -2,6 +2,8 @@ package state
 
 import (
 	"sync"
+
+	"go.opentelemetry.io/otel"
 )
 
 var (
@@ -29,6 +31,8 @@ func GlobalState() OTEL {
 func SetGlobalState(s *OTELState) {
 	otelStateMutex.Lock()
 	otelState = s
+	otel.SetMeterProvider(s.MeterProvider())
+	otel.SetTracerProvider(s.TracerProvider())
 	otelStateMutex.Unlock()
 }
 
