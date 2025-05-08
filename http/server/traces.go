@@ -20,7 +20,8 @@ type tracesHTTP struct {
 }
 
 func newTracesHTTP(tracer trace.Tracer, attrs []attribute.KeyValue,
-	reportHeaders bool, trustedProxies []string) *tracesHTTP {
+	reportHeaders bool, trustedProxies []string,
+) *tracesHTTP {
 	var fa []attribute.KeyValue
 	if len(attrs) > 0 {
 		fa = make([]attribute.KeyValue, len(attrs))
