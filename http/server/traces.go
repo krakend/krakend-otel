@@ -51,11 +51,7 @@ func (t *tracesHTTP) start(r *http.Request, tr *tracking) *http.Request {
 	r = r.WithContext(tr.ctx)
 
 	var attrs []attribute.KeyValue
-	if len(t.trustedProxies) > 0 {
-		attrs = otelhttp.TraceRequestAttrsWithTrustedProxies(r, t.trustedProxies)
-	} else {
-		attrs = otelhttp.TraceRequestAttrs(r)
-	}
+	attrs = otelhttp.TraceIncomingRequestAttrs(r, t.trustedProxies)
 
 	tr.span.SetAttributes(attrs...)
 	if len(t.fixedAttrs) > 0 {
