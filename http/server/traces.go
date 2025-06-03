@@ -51,8 +51,7 @@ func (t *tracesHTTP) start(r *http.Request, tr *tracking) *http.Request {
 		trace.WithSpanKind(trace.SpanKindServer))
 	r = r.WithContext(tr.ctx)
 
-	var attrs []attribute.KeyValue
-	attrs = otelhttp.TraceIncomingRequestAttrs(r, t.trustedProxies)
+	attrs := otelhttp.TraceIncomingRequestAttrs(r, t.trustedProxies)
 
 	tr.span.SetAttributes(attrs...)
 	if len(t.fixedAttrs) > 0 {

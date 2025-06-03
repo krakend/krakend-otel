@@ -80,7 +80,7 @@ func NewTrackingHandlerWithTrustedProxies(next http.Handler, trustedProxies []st
 	if !gCfg.DisableMetrics {
 		var metricsAttrs []attribute.KeyValue
 		for _, kv := range gCfg.MetricsStaticAttributes {
-			if len(kv.Key) > 0 && len(kv.Value) > 0 {
+			if kv.Key != "" && kv.Value != "" {
 				metricsAttrs = append(metricsAttrs, attribute.String(kv.Key, kv.Value))
 			}
 		}
@@ -92,7 +92,7 @@ func NewTrackingHandlerWithTrustedProxies(next http.Handler, trustedProxies []st
 	if !gCfg.DisableTraces {
 		tracesAttrs := []attribute.KeyValue{attribute.String("krakend.stage", "global")}
 		for _, kv := range gCfg.TracesStaticAttributes {
-			if len(kv.Key) > 0 && len(kv.Value) > 0 {
+			if kv.Key != "" && kv.Value != "" > 0 {
 				tracesAttrs = append(tracesAttrs, attribute.String(kv.Key, kv.Value))
 			}
 		}

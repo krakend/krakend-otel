@@ -36,7 +36,7 @@ func clientAddr(r *http.Request, trustedProxies map[string]bool) string {
 	if r.RemoteAddr == "" {
 		return ""
 	}
-	if trustedProxies == nil || len(trustedProxies) == 0 {
+	if len(trustedProxies) == 0 {
 		return r.RemoteAddr
 	}
 
