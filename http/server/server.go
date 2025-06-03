@@ -57,6 +57,10 @@ func (h *trackingHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 }
 
 func NewTrackingHandler(next http.Handler) http.Handler {
+	return NewTrackingHandlerWithTrustedProxies(next, nil)
+}
+
+func NewTrackingHandlerWithTrustedProxies(next http.Handler, trustedProxies []string) http.Handler {
 	otelCfg := state.GlobalConfig()
 	if otelCfg == nil {
 		return next
@@ -76,7 +80,7 @@ func NewTrackingHandler(next http.Handler) http.Handler {
 	if !gCfg.DisableMetrics {
 		var metricsAttrs []attribute.KeyValue
 		for _, kv := range gCfg.MetricsStaticAttributes {
-			if len(kv.Key) > 0 && len(kv.Value) > 0 {
+			if kv.Key != "" && kv.Value != "" {
 				metricsAttrs = append(metricsAttrs, attribute.String(kv.Key, kv.Value))
 			}
 		}
@@ -88,12 +92,12 @@ func NewTrackingHandler(next http.Handler) http.Handler {
 	if !gCfg.DisableTraces {
 		tracesAttrs := []attribute.KeyValue{attribute.String("krakend.stage", "global")}
 		for _, kv := range gCfg.TracesStaticAttributes {
-			if len(kv.Key) > 0 && len(kv.Value) > 0 {
+			if kv.Key != "" && kv.Value != "" {
 				tracesAttrs = append(tracesAttrs, attribute.String(kv.Key, kv.Value))
 			}
 		}
 
-		t = newTracesHTTP(s.Tracer(), tracesAttrs, gCfg.ReportHeaders)
+		t = newTracesHTTP(s.Tracer(), tracesAttrs, gCfg.ReportHeaders, trustedProxies)
 	}
 
 	return &trackingHandler{

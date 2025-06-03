@@ -18,7 +18,13 @@ func GlobalRunServer(_ logging.Logger, next luragin.RunServerFunc) luragin.RunSe
 	}
 
 	return func(ctx context.Context, cfg luraconfig.ServiceConfig, h http.Handler) error {
-		wrappedH := kotelhttpserver.NewTrackingHandler(h)
+		var trustedProxies []string
+		if v, ok := cfg.ExtraConfig[luragin.Namespace].(map[string]interface{}); ok {
+			if tpxs, ok := v["trusted_proxies"].([]string); ok {
+				trustedProxies = tpxs
+			}
+		}
+		wrappedH := kotelhttpserver.NewTrackingHandlerWithTrustedProxies(h, trustedProxies)
 		return next(ctx, cfg, wrappedH)
 	}
 }
