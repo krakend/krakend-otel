@@ -15,8 +15,8 @@ import (
 	"context"
 	"errors"
 
+	"go.opentelemetry.io/contrib/propagators/autoprop"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/propagation"
 
 	lconfig "github.com/luraproject/lura/v2/config"
 	lcore "github.com/luraproject/lura/v2/core"
@@ -80,11 +80,12 @@ func RegisterGlobalInstanceWithEnv(ctx context.Context, l logging.Logger,
 	env string,
 ) (func(), error) {
 	shutdownFn := func() {}
-	prop := propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{},
-		propagation.Baggage{},
-	)
+
+	// Create a propagator that defaults to propagating the W3C Trace Context and Baggage headers
+	// but allows for other propagators to be enabled via the OTEL_PROPAGATORS env variable.
+	prop := autoprop.NewTextMapPropagator()
 	otel.SetTextMapPropagator(prop)
+
 	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(e error) {
 		// TODO: we might want to "throtle" the error reporting
 		// when we have repeated messagese when a OTLP backend is
