@@ -10,6 +10,7 @@ import (
 type TrackingResponseWriter struct {
 	track          *tracking
 	recordHeaders  bool
+	skipHeaders    map[string]bool
 	rw             http.ResponseWriter
 	flusher        http.Flusher
 	hijacker       http.Hijacker
@@ -27,7 +28,9 @@ func (w *TrackingResponseWriter) gatherHeaders() {
 	h := w.rw.Header()
 	w.track.responseHeaders = make(map[string][]string, len(h))
 	for k, v := range h {
-		w.track.responseHeaders[k] = v
+		if w.skipHeaders == nil || !w.skipHeaders[k] {
+			w.track.responseHeaders[k] = v
+		}
 	}
 }
 
@@ -80,13 +83,14 @@ func (w *TrackingResponseWriter) Flush() {
 }
 
 func newTrackingResponseWriter(rw http.ResponseWriter, t *tracking, recordHeaders bool,
-	hijackCallback func(net.Conn, error) (net.Conn, error),
+	skipHeaders map[string]bool, hijackCallback func(net.Conn, error) (net.Conn, error),
 ) *TrackingResponseWriter {
 	flusher, _ := rw.(http.Flusher)
 	hijacker, _ := rw.(http.Hijacker)
 	return &TrackingResponseWriter{
 		track:          t,
 		recordHeaders:  recordHeaders,
+		skipHeaders:    skipHeaders,
 		rw:             rw,
 		flusher:        flusher,
 		hijacker:       hijacker,

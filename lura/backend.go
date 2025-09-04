@@ -112,6 +112,7 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 			DetailedConnection: opts.Traces.DetailedConnection,
 			FixedAttributes:    traceAttrs,
 			ReportHeaders:      opts.Traces.ReportHeaders,
+			SkipHeaders:        opts.Traces.SkipHeaders,
 		},
 		OTELInstance: otelState,
 	}

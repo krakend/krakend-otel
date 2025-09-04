@@ -49,7 +49,7 @@ func metricsAndTracesMiddleware(next proxy.Proxy, mm *middlewareMeter, mt *middl
 // and report the duration of this stage in metrics if enabled.
 func middleware(gs state.OTEL, metricsEnabled bool, tracesEnabled bool,
 	stageName string, urlPattern string, metricsAttrs, tracesAttrs []attribute.KeyValue,
-	reportHeaders bool,
+	reportHeaders bool, skipHeaders []string,
 ) proxy.Middleware {
 	var mt *middlewareTracer
 	var mm *middlewareMeter
@@ -62,7 +62,7 @@ func middleware(gs state.OTEL, metricsEnabled bool, tracesEnabled bool,
 		}
 	}
 	if tracesEnabled {
-		mt = newMiddlewareTracer(gs, urlPattern, stageName, reportHeaders, tracesAttrs)
+		mt = newMiddlewareTracer(gs, urlPattern, stageName, reportHeaders, skipHeaders, tracesAttrs)
 		if mt == nil {
 			// TODO: log the error
 			tracesEnabled = false
@@ -136,7 +136,8 @@ func ProxyFactory(pf proxy.Factory) proxy.FactoryFunc {
 		}
 
 		return middleware(gs, !pipeOpts.DisableMetrics, !pipeOpts.DisableTraces,
-			"proxy", urlPattern, metricsAttrs, tracesAttrs, pipeOpts.ReportHeaders)(next), nil
+			"proxy", urlPattern, metricsAttrs, tracesAttrs, pipeOpts.ReportHeaders,
+			pipeOpts.SkipHeaders)(next), nil
 	}
 }
 
@@ -192,6 +193,7 @@ func BackendFactory(bf proxy.BackendFactory) proxy.BackendFactory {
 		}
 
 		return middleware(gs, !metricsDisabled, !tracesDisabled,
-			"backend", urlPattern, metricsAttrs, tracesAttrs, reportHeaders)(next)
+			"backend", urlPattern, metricsAttrs, tracesAttrs, reportHeaders,
+			backendOpts.Traces.SkipHeaders)(next)
 	}
 }

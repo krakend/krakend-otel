@@ -16,11 +16,12 @@ type tracesHTTP struct {
 	tracer         trace.Tracer
 	fixedAttrs     []attribute.KeyValue
 	reportHeaders  bool
+	skipHeaders    map[string]bool
 	trustedProxies map[string]bool
 }
 
 func newTracesHTTP(tracer trace.Tracer, attrs []attribute.KeyValue,
-	reportHeaders bool, trustedProxies []string,
+	reportHeaders bool, skipHeaders map[string]bool, trustedProxies []string,
 ) *tracesHTTP {
 	var fa []attribute.KeyValue
 	if len(attrs) > 0 {
@@ -36,6 +37,7 @@ func newTracesHTTP(tracer trace.Tracer, attrs []attribute.KeyValue,
 		tracer:         tracer,
 		fixedAttrs:     fa,
 		reportHeaders:  reportHeaders,
+		skipHeaders:    skipHeaders,
 		trustedProxies: tpm,
 	}
 }
