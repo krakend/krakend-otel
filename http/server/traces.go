@@ -107,7 +107,6 @@ func (t *tracesHTTP) end(tr *tracking) {
 					tr.span.SetAttributes(attribute.StringSlice("http.response.header."+strings.ToLower(hk), hv))
 				}
 			}
-
 		}
 	}
 	if len(tr.writeErrs) > 0 {
