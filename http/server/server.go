@@ -19,6 +19,7 @@ type trackingHandler struct {
 	metrics       *metricsHTTP
 	traces        *tracesHTTP
 	reportHeaders bool
+	skipHeaders   map[string]bool
 	config        state.Config
 }
 
@@ -40,7 +41,7 @@ func (h *trackingHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(t.ctx)
 
 	if h.metrics != nil || h.traces != nil {
-		rw = newTrackingResponseWriter(rw, t, h.reportHeaders, func(c net.Conn, _ error) (net.Conn, error) {
+		rw = newTrackingResponseWriter(rw, t, h.reportHeaders, h.skipHeaders, func(c net.Conn, _ error) (net.Conn, error) {
 			t.Finish()
 			h.traces.end(t)
 			h.metrics.report(t, r)
@@ -60,7 +61,7 @@ func NewTrackingHandler(next http.Handler) http.Handler {
 	return NewTrackingHandlerWithTrustedProxies(next, nil)
 }
 
-func NewTrackingHandlerWithTrustedProxies(next http.Handler, trustedProxies []string) http.Handler {
+func NewTrackingHandlerWithTrustedProxies(next http.Handler, trustedProxies []string) http.Handler { // skipcq: GO-R1005
 	otelCfg := state.GlobalConfig()
 	if otelCfg == nil {
 		return next
@@ -88,6 +89,14 @@ func NewTrackingHandlerWithTrustedProxies(next http.Handler, trustedProxies []st
 		m = newMetricsHTTP(s.Meter(), metricsAttrs, gCfg.SemConv)
 	}
 
+	var sh map[string]bool
+	if len(gCfg.SkipHeaders) > 0 {
+		sh = make(map[string]bool, len(gCfg.SkipHeaders))
+		for _, v := range gCfg.SkipHeaders {
+			sh[v] = true
+		}
+	}
+
 	var t *tracesHTTP
 	if !gCfg.DisableTraces {
 		tracesAttrs := []attribute.KeyValue{attribute.String("krakend.stage", "global")}
@@ -97,7 +106,7 @@ func NewTrackingHandlerWithTrustedProxies(next http.Handler, trustedProxies []st
 			}
 		}
 
-		t = newTracesHTTP(s.Tracer(), tracesAttrs, gCfg.ReportHeaders, trustedProxies)
+		t = newTracesHTTP(s.Tracer(), tracesAttrs, gCfg.ReportHeaders, sh, trustedProxies)
 	}
 
 	return &trackingHandler{
@@ -106,6 +115,7 @@ func NewTrackingHandlerWithTrustedProxies(next http.Handler, trustedProxies []st
 		metrics:       m,
 		traces:        t,
 		reportHeaders: gCfg.ReportHeaders,
+		skipHeaders:   sh,
 		config:        otelCfg,
 	}
 }

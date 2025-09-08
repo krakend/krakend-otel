@@ -49,7 +49,7 @@ func metricsAndTracesMiddleware(next proxy.Proxy, mm *middlewareMeter, mt *middl
 // and report the duration of this stage in metrics if enabled.
 func middleware(gs state.OTEL, metricsEnabled bool, tracesEnabled bool,
 	stageName string, urlPattern string, metricsAttrs, tracesAttrs []attribute.KeyValue,
-	reportHeaders bool,
+	reportHeaders bool, skipHeaders []string,
 ) proxy.Middleware {
 	var mt *middlewareTracer
 	var mm *middlewareMeter
@@ -62,7 +62,7 @@ func middleware(gs state.OTEL, metricsEnabled bool, tracesEnabled bool,
 		}
 	}
 	if tracesEnabled {
-		mt = newMiddlewareTracer(gs, urlPattern, stageName, reportHeaders, tracesAttrs)
+		mt = newMiddlewareTracer(gs, urlPattern, stageName, reportHeaders, skipHeaders, tracesAttrs)
 		if mt == nil {
 			// TODO: log the error
 			tracesEnabled = false
@@ -124,19 +124,20 @@ func ProxyFactory(pf proxy.Factory) proxy.FactoryFunc {
 		metricsAttrs := attrs
 		tracesAttrs := attrs
 		for _, kv := range pipeOpts.MetricsStaticAttributes {
-			if len(kv.Key) > 0 && len(kv.Value) > 0 {
+			if kv.Key != "" && kv.Value != "" {
 				metricsAttrs = append(metricsAttrs, attribute.String(kv.Key, kv.Value))
 			}
 		}
 
 		for _, kv := range pipeOpts.TracesStaticAttributes {
-			if len(kv.Key) > 0 && len(kv.Value) > 0 {
+			if kv.Key != "" && kv.Value != "" {
 				tracesAttrs = append(tracesAttrs, attribute.String(kv.Key, kv.Value))
 			}
 		}
 
 		return middleware(gs, !pipeOpts.DisableMetrics, !pipeOpts.DisableTraces,
-			"proxy", urlPattern, metricsAttrs, tracesAttrs, pipeOpts.ReportHeaders)(next), nil
+			"proxy", urlPattern, metricsAttrs, tracesAttrs, pipeOpts.ReportHeaders,
+			pipeOpts.SkipHeaders)(next), nil
 	}
 }
 
@@ -175,7 +176,7 @@ func BackendFactory(bf proxy.BackendFactory) proxy.BackendFactory {
 		tracesAttrs := attrs
 		if backendOpts.Metrics != nil {
 			for _, kv := range backendOpts.Metrics.StaticAttributes {
-				if len(kv.Key) > 0 && len(kv.Value) > 0 {
+				if kv.Key != "" && kv.Value != "" {
 					metricsAttrs = append(metricsAttrs, attribute.String(kv.Key, kv.Value))
 				}
 			}
@@ -185,13 +186,14 @@ func BackendFactory(bf proxy.BackendFactory) proxy.BackendFactory {
 		if backendOpts.Traces != nil {
 			reportHeaders = backendOpts.Traces.ReportHeaders
 			for _, kv := range backendOpts.Traces.StaticAttributes {
-				if len(kv.Key) > 0 && len(kv.Value) > 0 {
+				if kv.Key != "" && kv.Value != "" {
 					tracesAttrs = append(tracesAttrs, attribute.String(kv.Key, kv.Value))
 				}
 			}
 		}
 
 		return middleware(gs, !metricsDisabled, !tracesDisabled,
-			"backend", urlPattern, metricsAttrs, tracesAttrs, reportHeaders)(next)
+			"backend", urlPattern, metricsAttrs, tracesAttrs, reportHeaders,
+			backendOpts.Traces.SkipHeaders)(next)
 	}
 }

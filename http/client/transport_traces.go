@@ -21,6 +21,7 @@ type TransportTracesOptions struct {
 	DetailedConnection bool                 // add extra detail about the connection to the server: dns lookup, tls...
 	FixedAttributes    []attribute.KeyValue // "static" attributes set at config time.
 	ReportHeaders      bool
+	SkipHeaders        []string
 }
 
 // Enabled returns if the transport should create a trace.
@@ -34,19 +35,27 @@ type transportTraces struct {
 	fixedAttrs         []attribute.KeyValue
 	detailedConnection bool
 	reportHeaders      bool
+	skipHeaders        map[string]bool
 }
 
 func newTransportTraces(tracesOpts *TransportTracesOptions, tracer trace.Tracer, spanName string) *transportTraces {
 	if tracer == nil {
 		return nil
 	}
-
+	var sh map[string]bool
+	if len(tracesOpts.SkipHeaders) > 0 {
+		sh = make(map[string]bool, len(tracesOpts.SkipHeaders))
+		for _, v := range tracesOpts.SkipHeaders {
+			sh[v] = true
+		}
+	}
 	return &transportTraces{
 		tracer:             tracer,
 		spanName:           spanName,
 		fixedAttrs:         tracesOpts.FixedAttributes,
 		detailedConnection: tracesOpts.DetailedConnection,
 		reportHeaders:      tracesOpts.ReportHeaders,
+		skipHeaders:        sh,
 	}
 }
 
@@ -75,7 +84,7 @@ func (t *transportTraces) start(rtt *roundTripTracking,
 	header := make(http.Header, len(rtt.req.Header)+1)
 	for k, v := range rtt.req.Header {
 		header[k] = v
-		if t.reportHeaders {
+		if t.reportHeaders && (t.skipHeaders == nil || !t.skipHeaders[k]) {
 			reqAttrs = append(reqAttrs,
 				attribute.StringSlice("http.request.header."+strings.ToLower(k), v))
 		}
@@ -99,8 +108,10 @@ func (t *transportTraces) end(rtt *roundTripTracking) {
 		respAttrs := otelhttp.TraceResponseAttrs(rtt.resp)
 		if t.reportHeaders {
 			for k, v := range rtt.resp.Header {
-				respAttrs = append(respAttrs,
-					attribute.StringSlice("http.response.header."+strings.ToLower(k), v))
+				if t.skipHeaders == nil || !t.skipHeaders[k] {
+					respAttrs = append(respAttrs,
+						attribute.StringSlice("http.response.header."+strings.ToLower(k), v))
+				}
 			}
 		}
 		rtt.span.SetAttributes(respAttrs...)
