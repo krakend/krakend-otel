@@ -23,7 +23,8 @@ type middlewareTracer struct {
 }
 
 func newMiddlewareTracer(s state.OTEL, name string, stageName string, reportHeaders bool,
-	skipHeaders []string, attrs []attribute.KeyValue) *middlewareTracer {
+	skipHeaders []string, attrs []attribute.KeyValue,
+) *middlewareTracer {
 	tracer := s.Tracer()
 	if tracer == nil {
 		return nil
