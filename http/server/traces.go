@@ -96,9 +96,18 @@ func (t *tracesHTTP) end(tr *tracking) {
 	tr.span.SetAttributes(tr.tracesStaticAttrs...)
 
 	if tr.responseHeaders != nil {
-		// report all incoming headers
-		for hk, hv := range tr.responseHeaders {
-			tr.span.SetAttributes(attribute.StringSlice("http.response.header."+strings.ToLower(hk), hv))
+		if len(t.skipHeaders) == 0 {
+			// report all incoming headers
+			for hk, hv := range tr.responseHeaders {
+				tr.span.SetAttributes(attribute.StringSlice("http.response.header."+strings.ToLower(hk), hv))
+			}
+		} else {
+			for hk, hv := range tr.responseHeaders {
+				if !t.skipHeaders[hk] {
+					tr.span.SetAttributes(attribute.StringSlice("http.response.header."+strings.ToLower(hk), hv))
+				}
+			}
+
 		}
 	}
 	if len(tr.writeErrs) > 0 {
