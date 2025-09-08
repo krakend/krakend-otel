@@ -60,9 +60,17 @@ func (t *tracesHTTP) start(r *http.Request, tr *tracking) *http.Request {
 		tr.span.SetAttributes(t.fixedAttrs...)
 	}
 	if t.reportHeaders {
-		// report all incoming headers
-		for hk, hv := range r.Header {
-			tr.span.SetAttributes(attribute.StringSlice("http.request.header."+strings.ToLower(hk), hv))
+		if len(t.skipHeaders) == 0 {
+			// report all incoming headers
+			for hk, hv := range r.Header {
+				tr.span.SetAttributes(attribute.StringSlice("http.request.header."+strings.ToLower(hk), hv))
+			}
+		} else {
+			for hk, hv := range r.Header {
+				if !t.skipHeaders[hk] {
+					tr.span.SetAttributes(attribute.StringSlice("http.request.header."+strings.ToLower(hk), hv))
+				}
+			}
 		}
 	}
 	return r
