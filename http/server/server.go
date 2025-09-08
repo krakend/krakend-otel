@@ -61,7 +61,7 @@ func NewTrackingHandler(next http.Handler) http.Handler {
 	return NewTrackingHandlerWithTrustedProxies(next, nil)
 }
 
-func NewTrackingHandlerWithTrustedProxies(next http.Handler, trustedProxies []string) http.Handler {
+func NewTrackingHandlerWithTrustedProxies(next http.Handler, trustedProxies []string) http.Handler { // skipcq: GO-R1005
 	otelCfg := state.GlobalConfig()
 	if otelCfg == nil {
 		return next
