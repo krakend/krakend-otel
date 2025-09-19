@@ -144,6 +144,7 @@ type GlobalOpts struct {
 	DisableTraces           bool       `json:"disable_traces"`
 	DisablePropagation      bool       `json:"disable_propagation"`
 	ReportHeaders           bool       `json:"report_headers"`
+	SkipHeaders             []string   `json:"skip_headers"`
 	MetricsStaticAttributes Attributes `json:"metrics_static_attributes"`
 	TracesStaticAttributes  Attributes `json:"traces_static_attributes"`
 	SemConv                 string     `json:"semantic_convention"`
@@ -155,6 +156,7 @@ type PipeOpts struct {
 	DisableMetrics          bool       `json:"disable_metrics"`
 	DisableTraces           bool       `json:"disable_traces"`
 	ReportHeaders           bool       `json:"report_headers"`
+	SkipHeaders             []string   `json:"skip_headers"`
 	MetricsStaticAttributes Attributes `json:"metrics_static_attributes"`
 	TracesStaticAttributes  Attributes `json:"traces_static_attributes"`
 }
@@ -255,6 +257,7 @@ type BackendTraceOpts struct {
 	DetailedConnection bool       `json:"detailed_connection"`
 	StaticAttributes   Attributes `json:"static_attributes"`
 	ReportHeaders      bool       `json:"report_headers"`
+	SkipHeaders        []string   `json:"skip_headers"`
 }
 
 // Enabled tells if there are any traces to be reported.

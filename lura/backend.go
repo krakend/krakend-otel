@@ -82,7 +82,7 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 
 	metricAttrs := attrs
 	for _, kv := range opts.Metrics.StaticAttributes {
-		if len(kv.Key) > 0 && len(kv.Value) > 0 {
+		if kv.Key != "" && kv.Value != "" {
 			metricAttrs = append(metricAttrs, attribute.String(kv.Key, kv.Value))
 		}
 	}
@@ -93,7 +93,7 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 	traceAttrs = append(traceAttrs,
 		attribute.String("krakend.stage", "backend-request"))
 	for _, kv := range opts.Traces.StaticAttributes {
-		if len(kv.Key) > 0 && len(kv.Value) > 0 {
+		if kv.Key != "" && kv.Value != "" {
 			traceAttrs = append(traceAttrs, attribute.String(kv.Key, kv.Value))
 		}
 	}
@@ -112,6 +112,7 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 			DetailedConnection: opts.Traces.DetailedConnection,
 			FixedAttributes:    traceAttrs,
 			ReportHeaders:      opts.Traces.ReportHeaders,
+			SkipHeaders:        opts.Traces.SkipHeaders,
 		},
 		OTELInstance: otelState,
 	}
