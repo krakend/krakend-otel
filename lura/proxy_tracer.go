@@ -3,6 +3,7 @@ package lura
 import (
 	"context"
 	"errors"
+	"net/textproto"
 	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -36,7 +37,8 @@ func newMiddlewareTracer(s state.OTEL, name string, stageName string, reportHead
 	if len(skipHeaders) > 0 {
 		sh = make(map[string]bool, len(skipHeaders))
 		for _, k := range skipHeaders {
-			sh[k] = true
+			canonical := textproto.CanonicalMIMEHeaderKey(k)
+			sh[canonical] = true
 		}
 	}
 	return &middlewareTracer{

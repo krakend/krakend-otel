@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/textproto"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
@@ -93,7 +94,8 @@ func NewTrackingHandlerWithTrustedProxies(next http.Handler, trustedProxies []st
 	if len(gCfg.SkipHeaders) > 0 {
 		sh = make(map[string]bool, len(gCfg.SkipHeaders))
 		for _, v := range gCfg.SkipHeaders {
-			sh[v] = true
+			canonical := textproto.CanonicalMIMEHeaderKey(v)
+			sh[canonical] = true
 		}
 	}
 
