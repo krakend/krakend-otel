@@ -2,6 +2,7 @@ package client
 
 import (
 	"net/http"
+	"net/textproto"
 	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -46,7 +47,8 @@ func newTransportTraces(tracesOpts *TransportTracesOptions, tracer trace.Tracer,
 	if len(tracesOpts.SkipHeaders) > 0 {
 		sh = make(map[string]bool, len(tracesOpts.SkipHeaders))
 		for _, v := range tracesOpts.SkipHeaders {
-			sh[v] = true
+			canonical := textproto.CanonicalMIMEHeaderKey(v)
+			sh[canonical] = true
 		}
 	}
 	return &transportTraces{
