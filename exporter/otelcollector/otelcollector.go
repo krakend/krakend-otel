@@ -16,7 +16,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
-	"github.com/krakend/krakend-otel/config"
+	"github.com/krakend/krakend-otel/v2/config"
 )
 
 // OtelCollector implements the traces exporter.

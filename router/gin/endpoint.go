@@ -2,14 +2,14 @@ package gin
 
 import (
 	"github.com/gin-gonic/gin"
-	luraconfig "github.com/luraproject/lura/v2/config"
-	"github.com/luraproject/lura/v2/proxy"
-	krakendgin "github.com/luraproject/lura/v2/router/gin"
+	luraconfig "github.com/luraproject/lura/v3/config"
+	"github.com/luraproject/lura/v3/proxy"
+	krakendgin "github.com/luraproject/lura/v3/router/gin"
 	"go.opentelemetry.io/otel/attribute"
 
-	kotelconfig "github.com/krakend/krakend-otel/config"
-	kotelserver "github.com/krakend/krakend-otel/http/server"
-	otelstate "github.com/krakend/krakend-otel/state"
+	kotelconfig "github.com/krakend/krakend-otel/v2/config"
+	kotelserver "github.com/krakend/krakend-otel/v2/http/server"
+	otelstate "github.com/krakend/krakend-otel/v2/state"
 )
 
 // New wraps a handler factory adding some simple instrumentation to the generated handlers

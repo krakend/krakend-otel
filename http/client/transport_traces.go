@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 
-	otelhttp "github.com/krakend/krakend-otel/http"
+	otelhttp "github.com/krakend/krakend-otel/v2/http"
 )
 
 // TransportTracesOptions defines what information

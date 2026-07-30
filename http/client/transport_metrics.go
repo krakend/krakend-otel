@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/semconv/v1.21.0"
 	v127 "go.opentelemetry.io/otel/semconv/v1.27.0"
 
-	kotelconfig "github.com/krakend/krakend-otel/config"
+	kotelconfig "github.com/krakend/krakend-otel/v2/config"
 )
 
 // TransportMetricsOptions contains the options to enable / disable
@@ -241,7 +241,8 @@ func (m *transportMetrics) attributesOption(rtt *roundTripTracking, attrs []attr
 		statusCode = int(rtt.resp.StatusCode)
 	}
 
-	attrM = append(attrM,
+	attrM = append(
+		attrM,
 		semconv.HTTPRequestMethodKey.String(rtt.req.Method), // required
 		// this is wrong, as the RemoteAddr is ignored when the request is used
 		// for a client (is filled by the server side):

@@ -4,11 +4,11 @@ import (
 	"context"
 	"net/http"
 
-	kotelhttpserver "github.com/krakend/krakend-otel/http/server"
-	"github.com/krakend/krakend-otel/state"
-	luraconfig "github.com/luraproject/lura/v2/config"
-	"github.com/luraproject/lura/v2/logging"
-	luragin "github.com/luraproject/lura/v2/router/gin"
+	kotelhttpserver "github.com/krakend/krakend-otel/v2/http/server"
+	"github.com/krakend/krakend-otel/v2/state"
+	luraconfig "github.com/luraproject/lura/v3/config"
+	"github.com/luraproject/lura/v3/logging"
+	luragin "github.com/luraproject/lura/v3/router/gin"
 )
 
 func GlobalRunServer(_ logging.Logger, next luragin.RunServerFunc) luragin.RunServerFunc {

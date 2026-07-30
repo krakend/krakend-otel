@@ -18,13 +18,13 @@ import (
 	"go.opentelemetry.io/contrib/propagators/autoprop"
 	"go.opentelemetry.io/otel"
 
-	lconfig "github.com/luraproject/lura/v2/config"
-	lcore "github.com/luraproject/lura/v2/core"
-	"github.com/luraproject/lura/v2/logging"
+	lconfig "github.com/luraproject/lura/v3/config"
+	lcore "github.com/luraproject/lura/v3/core"
+	"github.com/luraproject/lura/v3/logging"
 
-	"github.com/krakend/krakend-otel/config"
-	"github.com/krakend/krakend-otel/exporter"
-	"github.com/krakend/krakend-otel/state"
+	"github.com/krakend/krakend-otel/v2/config"
+	"github.com/krakend/krakend-otel/v2/exporter"
+	"github.com/krakend/krakend-otel/v2/state"
 )
 
 // Register uses the ServiceConfig to instantiate the configured exporters.

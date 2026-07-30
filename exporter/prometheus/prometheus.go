@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
-	"github.com/krakend/krakend-otel/config"
+	"github.com/krakend/krakend-otel/v2/config"
 )
 
 // PrometheusCollector implemnts the metrics exporter

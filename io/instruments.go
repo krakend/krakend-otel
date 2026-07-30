@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 
-	kotelconfig "github.com/krakend/krakend-otel/config"
+	kotelconfig "github.com/krakend/krakend-otel/v2/config"
 )
 
 // instruments holds the instruments for the transfer of
