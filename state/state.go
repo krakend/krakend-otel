@@ -15,11 +15,11 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 
-	"github.com/krakend/krakend-otel/exporter"
+	"github.com/krakend/krakend-otel/v2/exporter"
 )
 
 const (
@@ -118,7 +118,8 @@ func NewWithVersionAndEnv(serviceName string, cfg *OTELStateConfig, version stri
 		samplerOpt := sdktrace.WithSampler(sdktrace.AlwaysSample())
 		if cfg.TraceSampleRate > 0.0 && cfg.TraceSampleRate < 1.0 {
 			samplerOpt = sdktrace.WithSampler(sdktrace.ParentBased(
-				sdktrace.TraceIDRatioBased(cfg.TraceSampleRate)))
+				sdktrace.TraceIDRatioBased(cfg.TraceSampleRate),
+			))
 		}
 		traceOpts = append(traceOpts, samplerOpt)
 		traceOpts = append(traceOpts, sdktrace.WithResource(res))

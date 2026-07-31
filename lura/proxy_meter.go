@@ -7,10 +7,10 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	"github.com/luraproject/lura/v2/proxy"
+	"github.com/luraproject/lura/v3/proxy"
 
-	kotelconfig "github.com/krakend/krakend-otel/config"
-	"github.com/krakend/krakend-otel/state"
+	kotelconfig "github.com/krakend/krakend-otel/v2/config"
+	"github.com/krakend/krakend-otel/v2/state"
 )
 
 type middlewareMeter struct {
@@ -72,6 +72,7 @@ func (m *middlewareMeter) report(ctx context.Context, secs float64, resp *proxy.
 	metricDynAttrs := metric.WithAttributes(
 		attribute.Bool("error", isErr),
 		attribute.Bool("canceled", isCanceled),
-		attribute.Bool("complete", resp != nil && resp.IsComplete))
+		attribute.Bool("complete", resp != nil && resp.IsComplete),
+	)
 	m.duration.Record(ctx, secs, m.attrs, metricDynAttrs)
 }

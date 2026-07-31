@@ -7,12 +7,12 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/semconv/v1.21.0"
 
-	luraconfig "github.com/luraproject/lura/v2/config"
-	transport "github.com/luraproject/lura/v2/transport/http/client"
+	luraconfig "github.com/luraproject/lura/v3/config"
+	transport "github.com/luraproject/lura/v3/transport/http/client"
 
-	otelconfig "github.com/krakend/krakend-otel/config"
-	clienthttp "github.com/krakend/krakend-otel/http/client"
-	otelstate "github.com/krakend/krakend-otel/state"
+	otelconfig "github.com/krakend/krakend-otel/v2/config"
+	clienthttp "github.com/krakend/krakend-otel/v2/http/client"
+	otelstate "github.com/krakend/krakend-otel/v2/state"
 )
 
 var defaultOpts = otelconfig.BackendOpts{

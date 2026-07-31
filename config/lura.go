@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	luraconfig "github.com/luraproject/lura/v2/config"
+	luraconfig "github.com/luraproject/lura/v3/config"
 )
 
 const (

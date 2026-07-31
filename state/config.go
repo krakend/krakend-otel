@@ -1,8 +1,8 @@
 package state
 
 import (
-	"github.com/krakend/krakend-otel/config"
-	luraconfig "github.com/luraproject/lura/v2/config"
+	"github.com/krakend/krakend-otel/v2/config"
+	luraconfig "github.com/luraproject/lura/v3/config"
 )
 
 type Config interface {
