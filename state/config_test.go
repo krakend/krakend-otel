@@ -3,8 +3,8 @@ package state
 import (
 	"testing"
 
-	"github.com/krakend/krakend-otel/config"
-	luraconfig "github.com/luraproject/lura/v2/config"
+	"github.com/krakend/krakend-otel/v2/config"
+	luraconfig "github.com/luraproject/lura/v3/config"
 )
 
 func TestEndpointPipeConfigOverride(t *testing.T) {
@@ -38,14 +38,16 @@ func TestEndpointPipeConfigOverride(t *testing.T) {
 	if len(pipeOpts.MetricsStaticAttributes) != len(overrideMetricAttrs) {
 		t.Errorf(
 			"Incorrect number of attributes for metrics. returned: %+v - expected: %+v",
-			pipeOpts.MetricsStaticAttributes, overrideMetricAttrs)
+			pipeOpts.MetricsStaticAttributes, overrideMetricAttrs,
+		)
 		return
 	}
 
 	if len(pipeOpts.TracesStaticAttributes) != len(overrideTraceAttrs) {
 		t.Errorf(
 			"Incorrect number of attributes for traces. returned: %+v - expected: %+v",
-			pipeOpts.TracesStaticAttributes, overrideTraceAttrs)
+			pipeOpts.TracesStaticAttributes, overrideTraceAttrs,
+		)
 		return
 	}
 }
@@ -137,7 +139,8 @@ func TestBackendConfigOverride(t *testing.T) {
 	if len(backendOpts.Metrics.StaticAttributes) != len(overrideMetricAttrs) {
 		t.Errorf(
 			"Incorrect number of attributes for metrics. returned: %+v - expected: %+v",
-			backendOpts.Metrics.StaticAttributes, overrideMetricAttrs)
+			backendOpts.Metrics.StaticAttributes, overrideMetricAttrs,
+		)
 		return
 	}
 
@@ -148,7 +151,8 @@ func TestBackendConfigOverride(t *testing.T) {
 	if len(backendOpts.Traces.StaticAttributes) != len(overrideTraceAttrs) {
 		t.Errorf(
 			"Incorrect number of attributes for traces. returned: %+v - expected: %+v",
-			backendOpts.Traces.StaticAttributes, overrideTraceAttrs)
+			backendOpts.Traces.StaticAttributes, overrideTraceAttrs,
+		)
 		return
 	}
 }

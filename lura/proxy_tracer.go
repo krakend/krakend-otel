@@ -10,9 +10,9 @@ import (
 	"go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/luraproject/lura/v2/proxy"
+	"github.com/luraproject/lura/v3/proxy"
 
-	"github.com/krakend/krakend-otel/state"
+	"github.com/krakend/krakend-otel/v2/state"
 )
 
 type middlewareTracer struct {

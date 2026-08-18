@@ -9,7 +9,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 
-	otelhttp "github.com/krakend/krakend-otel/http"
+	otelhttp "github.com/krakend/krakend-otel/v2/http"
 )
 
 type tracesHTTP struct {
@@ -92,7 +92,8 @@ func (t *tracesHTTP) end(tr *tracking) {
 	tr.span.SetAttributes(
 		semconv.HTTPRoute(tr.EndpointPattern()),
 		semconv.HTTPResponseStatusCode(tr.responseStatus),
-		semconv.HTTPResponseBodySize(tr.responseSize))
+		semconv.HTTPResponseBodySize(tr.responseSize),
+	)
 	tr.span.SetAttributes(tr.tracesStaticAttrs...)
 
 	if tr.responseHeaders != nil {

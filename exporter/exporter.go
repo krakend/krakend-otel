@@ -11,9 +11,9 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
-	"github.com/krakend/krakend-otel/config"
-	"github.com/krakend/krakend-otel/exporter/otelcollector"
-	"github.com/krakend/krakend-otel/exporter/prometheus"
+	"github.com/krakend/krakend-otel/v2/config"
+	"github.com/krakend/krakend-otel/v2/exporter/otelcollector"
+	"github.com/krakend/krakend-otel/v2/exporter/prometheus"
 )
 
 // MetricReader is the interface required in order to

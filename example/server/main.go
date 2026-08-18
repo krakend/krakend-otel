@@ -28,16 +28,16 @@ import (
 	"syscall"
 
 	"github.com/gin-gonic/gin"
-	"github.com/luraproject/lura/v2/config"
-	"github.com/luraproject/lura/v2/logging"
-	"github.com/luraproject/lura/v2/proxy"
-	krakendgin "github.com/luraproject/lura/v2/router/gin"
-	"github.com/luraproject/lura/v2/transport/http/client"
-	"github.com/luraproject/lura/v2/transport/http/server"
+	"github.com/luraproject/lura/v3/config"
+	"github.com/luraproject/lura/v3/logging"
+	"github.com/luraproject/lura/v3/proxy"
+	krakendgin "github.com/luraproject/lura/v3/router/gin"
+	"github.com/luraproject/lura/v3/transport/http/client"
+	"github.com/luraproject/lura/v3/transport/http/server"
 
-	kotel "github.com/krakend/krakend-otel"
-	otellura "github.com/krakend/krakend-otel/lura"
-	otelgin "github.com/krakend/krakend-otel/router/gin"
+	kotel "github.com/krakend/krakend-otel/v2"
+	otellura "github.com/krakend/krakend-otel/v2/lura"
+	otelgin "github.com/krakend/krakend-otel/v2/router/gin"
 )
 
 func main() {
@@ -96,7 +96,8 @@ func main() {
 	handlerF := otelgin.New(krakendgin.EndpointHandler)
 
 	runserverChain := krakendgin.RunServerFunc(
-		otellura.GlobalRunServer(logger, server.RunServer))
+		otellura.GlobalRunServer(logger, server.RunServer),
+	)
 
 	engine := gin.Default()
 	engine.RedirectTrailingSlash = true

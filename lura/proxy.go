@@ -7,11 +7,11 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
-	"github.com/luraproject/lura/v2/config"
-	"github.com/luraproject/lura/v2/proxy"
+	"github.com/luraproject/lura/v3/config"
+	"github.com/luraproject/lura/v3/proxy"
 
-	kotelconfig "github.com/krakend/krakend-otel/config"
-	"github.com/krakend/krakend-otel/state"
+	kotelconfig "github.com/krakend/krakend-otel/v2/config"
+	"github.com/krakend/krakend-otel/v2/state"
 )
 
 func tracesMiddleware(next proxy.Proxy, mt *middlewareTracer) func(ctx context.Context, req *proxy.Request) (*proxy.Response, error) {
