@@ -62,7 +62,7 @@ require (
 	go.opentelemetry.io/contrib/propagators/b3 v1.44.0 // indirect
 	go.opentelemetry.io/contrib/propagators/jaeger v1.44.0 // indirect
 	go.opentelemetry.io/contrib/propagators/ot v1.44.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.44.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.45.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.29.0 // indirect
