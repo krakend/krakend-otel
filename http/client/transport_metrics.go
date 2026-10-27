@@ -61,9 +61,9 @@ type transportMetrics struct {
 	// to identify the source of the request (in KrakenD the front facing endpoint)
 	clientName string
 
-	// we keep track of of overwritten dynamic attributes by static ones
-	attrOverwriteServerAddress *string
-	attrOverwriteServerPort    *int
+	// if the server and port attributes were provided as static, we do not
+	// need to add the attributes from the outgoing request:
+	skipServerAndPort bool
 }
 
 type metricFillerFn func(*TransportMetricsOptions, metric.Meter, *transportMetrics)
@@ -166,6 +166,14 @@ func newTransportMetrics(metricsOpts *TransportMetricsOptions, meter metric.Mete
 	tm := transportMetrics{
 		clientName: clientName,
 	}
+
+	// check for special attributes that can be overriden: server, port
+	for _, fattr := range metricsOpts.FixedAttributes {
+		if fattr.Key == semconv.ServerAddressKey {
+			tm.skipServerAndPort = true
+		}
+	}
+
 	filler := noSemConvMetricsFiller
 	if versionFiller, ok := supportedSemConv[metricsOpts.SemConv]; ok {
 		filler = versionFiller
@@ -236,8 +244,6 @@ func (m *transportMetrics) attributesOption(rtt *roundTripTracking, attrs []attr
 		attrM = append(attrM, attribute.Key("clientname").String(m.clientName))
 	}
 
-	serverAddress, serverPort := m.requestServerAndPort(rtt.req)
-
 	statusCode := 0
 	if rtt.err == nil {
 		// if we fail on the client side, we do not have a status code, but we
@@ -251,31 +257,28 @@ func (m *transportMetrics) attributesOption(rtt *roundTripTracking, attrs []attr
 		// this is wrong, as the RemoteAddr is ignored when the request is used
 		// for a client (is filled by the server side):
 		// semconv.ServerAddress(rtt.req.RemoteAddr),
-		semconv.ServerAddress(serverAddress),       // required by sem conv 1.29
-		semconv.ServerPort(serverPort),             // required by sem conv 1.29
 		semconv.HTTPResponseStatusCode(statusCode), // required if received
 	)
+
+	if !m.skipServerAndPort {
+		serverAddress, serverPort := m.requestServerAndPort(rtt.req)
+		attrM = append(
+			attrM,
+			// this is wrong, as the RemoteAddr is ignored when the request is used
+			// for a client (is filled by the server side):
+			// semconv.ServerAddress(rtt.req.RemoteAddr),
+			semconv.ServerAddress(serverAddress), // required by sem conv 1.29
+			semconv.ServerPort(serverPort),       // required by sem conv 1.29
+		)
+	}
 	return metric.WithAttributeSet(attribute.NewSet(attrM...))
 }
 
 func (m *transportMetrics) requestServerAndPort(r *http.Request) (string, int) {
-	var serverAddress string
+	serverAddress := r.Host
 	serverPort := int(80)
-
-	if m.attrOverwriteServerAddress != nil {
-		serverAddress = *m.attrOverwriteServerAddress
-	} else {
-		serverAddress = r.Host
-		if r.URL != nil {
-			serverAddress = r.URL.Hostname()
-		}
-	}
-
-	if m.attrOverwriteServerPort != nil {
-		return serverAddress, *m.attrOverwriteServerPort
-	}
-
 	if r.URL != nil {
+		serverAddress = r.URL.Hostname()
 		strPort := r.URL.Port()
 		if p, err := strconv.ParseInt(strPort, 10, 32); err != nil {
 			serverPort = int(p)
