@@ -60,6 +60,10 @@ type transportMetrics struct {
 
 	// to identify the source of the request (in KrakenD the front facing endpoint)
 	clientName string
+
+	// we keep track of of overwritten dynamic attributes by static ones
+	attrOverwriteServerAddress *string
+	attrOverwriteServerPort    *int
 }
 
 type metricFillerFn func(*TransportMetricsOptions, metric.Meter, *transportMetrics)
@@ -232,7 +236,7 @@ func (m *transportMetrics) attributesOption(rtt *roundTripTracking, attrs []attr
 		attrM = append(attrM, attribute.Key("clientname").String(m.clientName))
 	}
 
-	serverAddress, serverPort := requestServerAndPort(rtt.req)
+	serverAddress, serverPort := m.requestServerAndPort(rtt.req)
 
 	statusCode := 0
 	if rtt.err == nil {
@@ -254,11 +258,24 @@ func (m *transportMetrics) attributesOption(rtt *roundTripTracking, attrs []attr
 	return metric.WithAttributeSet(attribute.NewSet(attrM...))
 }
 
-func requestServerAndPort(r *http.Request) (string, int) {
-	serverAddress := r.Host
+func (m *transportMetrics) requestServerAndPort(r *http.Request) (string, int) {
+	var serverAddress string
 	serverPort := int(80)
+
+	if m.attrOverwriteServerAddress != nil {
+		serverAddress = *m.attrOverwriteServerAddress
+	} else {
+		serverAddress = r.Host
+		if r.URL != nil {
+			serverAddress = r.URL.Hostname()
+		}
+	}
+
+	if m.attrOverwriteServerPort != nil {
+		return serverAddress, *m.attrOverwriteServerPort
+	}
+
 	if r.URL != nil {
-		serverAddress = r.URL.Hostname()
 		strPort := r.URL.Port()
 		if p, err := strconv.ParseInt(strPort, 10, 32); err != nil {
 			serverPort = int(p)
