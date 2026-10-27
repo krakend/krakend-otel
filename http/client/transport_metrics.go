@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"strconv"
 
@@ -275,14 +276,14 @@ func (m *transportMetrics) attributesOption(rtt *roundTripTracking, attrs []attr
 }
 
 func requestServerAndPort(r *http.Request) (string, int) {
-	serverAddress := r.Host
-	serverPort := int(80)
+	serverAddress, strPort, _ := net.SplitHostPort(r.Host)
+	serverPort := 80
 	if r.URL != nil {
 		serverAddress = r.URL.Hostname()
-		strPort := r.URL.Port()
-		if p, err := strconv.ParseInt(strPort, 10, 32); err != nil {
-			serverPort = int(p)
-		}
+		strPort = r.URL.Port()
+	}
+	if p, err := strconv.ParseInt(strPort, 10, 32); err == nil {
+		serverPort = int(p)
 	}
 	return serverAddress, serverPort
 }
