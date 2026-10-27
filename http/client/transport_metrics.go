@@ -261,7 +261,7 @@ func (m *transportMetrics) attributesOption(rtt *roundTripTracking, attrs []attr
 	)
 
 	if !m.skipServerAndPort {
-		serverAddress, serverPort := m.requestServerAndPort(rtt.req)
+		serverAddress, serverPort := requestServerAndPort(rtt.req)
 		attrM = append(
 			attrM,
 			// this is wrong, as the RemoteAddr is ignored when the request is used
@@ -274,7 +274,7 @@ func (m *transportMetrics) attributesOption(rtt *roundTripTracking, attrs []attr
 	return metric.WithAttributeSet(attribute.NewSet(attrM...))
 }
 
-func (m *transportMetrics) requestServerAndPort(r *http.Request) (string, int) {
+func requestServerAndPort(r *http.Request) (string, int) {
 	serverAddress := r.Host
 	serverPort := int(80)
 	if r.URL != nil {
