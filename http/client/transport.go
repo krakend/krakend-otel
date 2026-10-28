@@ -18,7 +18,7 @@ import (
 
 // TransportOptions defines the detail we want for
 // the metrics and traces.
-// See [TrasnportMetricsOptions] and [TransportTracesOptions] for
+// See [TransportMetricsOptions] and [TransportTracesOptions] for
 // more details.
 // The OTELInstance member defines a function to obtain a State to
 // use with this transport. The state getter is used at configuration
