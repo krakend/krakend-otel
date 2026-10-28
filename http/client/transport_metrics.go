@@ -265,9 +265,6 @@ func (m *transportMetrics) attributesOption(rtt *roundTripTracking, attrs []attr
 		serverAddress, serverPort := requestServerAndPort(rtt.req)
 		attrM = append(
 			attrM,
-			// this is wrong, as the RemoteAddr is ignored when the request is used
-			// for a client (is filled by the server side):
-			// semconv.ServerAddress(rtt.req.RemoteAddr),
 			semconv.ServerAddress(serverAddress), // required by sem conv 1.29
 			semconv.ServerPort(serverPort),       // required by sem conv 1.29
 		)
