@@ -32,6 +32,10 @@ func SetGlobalOTELState(s OTEL) {
 // SetGlobalState set the provided state as the global state.
 // Deprecated: use SetGlobalOTELState
 func SetGlobalState(s *OTELState) {
+	if s == nil {
+		SetGlobalOTELState(nil)
+		return
+	}
 	SetGlobalOTELState(s)
 }
 
