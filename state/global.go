@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	otelState      *OTELState
+	otelState      OTEL
 	otelStateMutex sync.RWMutex
 
 	globalConfig      Config
@@ -19,17 +19,24 @@ func GlobalState() OTEL {
 	otelStateMutex.RLock()
 	s := otelState
 	otelStateMutex.RUnlock()
-	if s == nil {
-		return nil
-	}
 	return s
 }
 
-// SetGlobalState set the provided state as the global state.
-func SetGlobalState(s *OTELState) {
+// SetGlobalOTELState set the provided state as the global state.
+func SetGlobalOTELState(s OTEL) {
 	otelStateMutex.Lock()
 	otelState = s
 	otelStateMutex.Unlock()
+}
+
+// SetGlobalState set the provided state as the global state.
+// Deprecated: use SetGlobalOTELState
+func SetGlobalState(s *OTELState) {
+	if s == nil {
+		SetGlobalOTELState(nil)
+		return
+	}
+	SetGlobalOTELState(s)
 }
 
 func SetGlobalConfig(cfg Config) {
