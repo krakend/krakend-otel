@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"net/textproto"
@@ -22,6 +23,8 @@ type trackingHandler struct {
 	reportHeaders bool
 	skipHeaders   map[string]bool
 	config        state.Config
+
+	reportClientDisconnects bool
 }
 
 func (h *trackingHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
@@ -53,6 +56,9 @@ func (h *trackingHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	t.Start()
 	r = h.traces.start(r, t)
 	h.next.ServeHTTP(rw, r)
+	// the request context is only canceled before the end of the handler
+	// when the client closes the connection
+	t.clientDisconnected = h.reportClientDisconnects && errors.Is(r.Context().Err(), context.Canceled)
 	t.Finish()
 	h.traces.end(t)
 	h.metrics.report(t, r)
@@ -119,5 +125,7 @@ func NewTrackingHandlerWithTrustedProxies(next http.Handler, trustedProxies []st
 		reportHeaders: gCfg.ReportHeaders,
 		skipHeaders:   sh,
 		config:        otelCfg,
+
+		reportClientDisconnects: gCfg.ReportClientDisconnects,
 	}
 }

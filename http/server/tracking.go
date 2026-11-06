@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
+	v127 "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -18,6 +19,10 @@ const (
 	// (like when gin has not the fallback option enabled in the engine).
 	krakenDContextTrackingStrKey KrakenDContextTrackingTypeKey = "KrakendD-Context-OTEL"
 )
+
+// clientDisconnectedAttr replaces the response status code of the requests
+// whose client closed the connection before getting the response
+var clientDisconnectedAttr = v127.ErrorTypeKey.String("client_disconnected")
 
 type tracking struct {
 	startTime time.Time
@@ -31,6 +36,7 @@ type tracking struct {
 	writeErrs          []error
 	endpointPattern    string
 	isHijacked         bool
+	clientDisconnected bool
 	metricsStaticAttrs []attribute.KeyValue
 	tracesStaticAttrs  []attribute.KeyValue
 	hijackedErr        error

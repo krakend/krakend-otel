@@ -148,6 +148,7 @@ type GlobalOpts struct {
 	MetricsStaticAttributes Attributes `json:"metrics_static_attributes"`
 	TracesStaticAttributes  Attributes `json:"traces_static_attributes"`
 	SemConv                 string     `json:"semantic_convention"`
+	ReportClientDisconnects bool       `json:"report_client_disconnects"`
 }
 
 // PipeOpts has the options for the KrakenD pipe stage

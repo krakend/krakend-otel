@@ -2,6 +2,7 @@ package otelio
 
 import (
 	"context"
+	"errors"
 	"io"
 	"time"
 
@@ -58,8 +59,12 @@ func (t *ioTracking) end(err error) {
 	var metricAttrOpts metric.MeasurementOption // <- we can move this to the instr parte
 	if t.gotError != nil {
 		metricAttrOpts = t.instr.metricAttributeSetWithErrorOpt
-		t.span.RecordError(t.gotError)
-		t.span.SetStatus(codes.Error, t.gotError.Error())
+		if t.instr.reportCanceled && (errors.Is(t.gotError, context.Canceled) || errors.Is(t.ctx.Err(), context.Canceled)) {
+			t.span.SetAttributes(attribute.Bool("canceled", true))
+		} else {
+			t.span.RecordError(t.gotError)
+			t.span.SetStatus(codes.Error, t.gotError.Error())
+		}
 	} else {
 		t.span.SetStatus(codes.Ok, "")
 		metricAttrOpts = t.instr.metricAttributeSetOpt

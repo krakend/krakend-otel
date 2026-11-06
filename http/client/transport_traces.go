@@ -1,6 +1,8 @@
 package client
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"net/textproto"
 	"strings"
@@ -23,6 +25,7 @@ type TransportTracesOptions struct {
 	FixedAttributes    []attribute.KeyValue // "static" attributes set at config time.
 	ReportHeaders      bool
 	SkipHeaders        []string
+	ReportCanceled     bool // report canceled requests with a canceled attribute instead of an error
 }
 
 // Enabled returns if the transport should create a trace.
@@ -37,6 +40,7 @@ type transportTraces struct {
 	detailedConnection bool
 	reportHeaders      bool
 	skipHeaders        map[string]bool
+	reportCanceled     bool
 }
 
 func newTransportTraces(tracesOpts *TransportTracesOptions, tracer trace.Tracer, spanName string) *transportTraces {
@@ -58,6 +62,7 @@ func newTransportTraces(tracesOpts *TransportTracesOptions, tracer trace.Tracer,
 		detailedConnection: tracesOpts.DetailedConnection,
 		reportHeaders:      tracesOpts.ReportHeaders,
 		skipHeaders:        sh,
+		reportCanceled:     tracesOpts.ReportCanceled,
 	}
 }
 
@@ -104,8 +109,12 @@ func (t *transportTraces) end(rtt *roundTripTracking) {
 	}
 
 	if rtt.err != nil {
-		rtt.span.RecordError(rtt.err)
-		rtt.span.SetStatus(codes.Error, rtt.err.Error())
+		if t.reportCanceled && (errors.Is(rtt.err, context.Canceled) || errors.Is(rtt.req.Context().Err(), context.Canceled)) {
+			rtt.span.SetAttributes(attribute.Bool("canceled", true))
+		} else {
+			rtt.span.RecordError(rtt.err)
+			rtt.span.SetStatus(codes.Error, rtt.err.Error())
+		}
 	} else {
 		respAttrs := otelhttp.TraceResponseAttrs(rtt.resp)
 		if t.reportHeaders {

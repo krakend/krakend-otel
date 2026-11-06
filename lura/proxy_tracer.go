@@ -21,10 +21,12 @@ type middlewareTracer struct {
 	reportHeaders bool
 	skipHeaders   map[string]bool
 	attrs         []attribute.KeyValue
+
+	reportClientDisconnects bool
 }
 
 func newMiddlewareTracer(s state.OTEL, name string, stageName string, reportHeaders bool,
-	skipHeaders []string, attrs []attribute.KeyValue,
+	skipHeaders []string, attrs []attribute.KeyValue, reportClientDisconnects bool,
 ) *middlewareTracer {
 	tracer := s.Tracer()
 	if tracer == nil {
@@ -47,6 +49,8 @@ func newMiddlewareTracer(s state.OTEL, name string, stageName string, reportHead
 		reportHeaders: reportHeaders,
 		skipHeaders:   sh,
 		attrs:         tAttrs,
+
+		reportClientDisconnects: reportClientDisconnects,
 	}
 }
 
@@ -63,14 +67,20 @@ func (t *middlewareTracer) start(ctx context.Context, req *proxy.Request) (conte
 	return ctx, span
 }
 
-func (t *middlewareTracer) end(span trace.Span, resp *proxy.Response, err error) {
+func (t *middlewareTracer) end(ctx context.Context, span trace.Span, resp *proxy.Response, err error) {
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
+		// errors gathered from several backends do not unwrap to context.Canceled,
+		// so the context tells when the request was canceled
+		canceled := errors.Is(err, context.Canceled) ||
+			(t.reportClientDisconnects && errors.Is(ctx.Err(), context.Canceled))
+		if canceled {
 			span.SetAttributes(attribute.Bool("canceled", true))
 		} else {
 			span.SetAttributes(attribute.String("error", err.Error()))
 		}
-		span.SetAttributes(semconv.HTTPResponseStatusCodeKey.Int(500))
+		if !canceled || !t.reportClientDisconnects {
+			span.SetAttributes(semconv.HTTPResponseStatusCodeKey.Int(500))
+		}
 	} else if resp != nil {
 		span.SetAttributes(semconv.HTTPResponseStatusCodeKey.Int(resp.Metadata.StatusCode))
 		if t.reportHeaders {
