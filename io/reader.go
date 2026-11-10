@@ -26,10 +26,26 @@ type instrumentedReader struct {
 func NewInstrumentedReaderFactory(prefix string, attrT []attribute.KeyValue, attrM []attribute.KeyValue,
 	tracer trace.Tracer, meter metric.Meter,
 ) func(io.Reader, context.Context) *instrumentedReader {
+	return newInstrumentedReaderFactory(prefix, attrT, attrM, tracer, meter, false)
+}
+
+// NewCancelAwareInstrumentedReaderFactory works like [NewInstrumentedReaderFactory], but when
+// the reading fails because its context was canceled, the span gets a canceled attribute
+// instead of an error status.
+func NewCancelAwareInstrumentedReaderFactory(prefix string, attrT []attribute.KeyValue, attrM []attribute.KeyValue,
+	tracer trace.Tracer, meter metric.Meter,
+) func(io.Reader, context.Context) *instrumentedReader {
+	return newInstrumentedReaderFactory(prefix, attrT, attrM, tracer, meter, true)
+}
+
+func newInstrumentedReaderFactory(prefix string, attrT []attribute.KeyValue, attrM []attribute.KeyValue,
+	tracer trace.Tracer, meter metric.Meter, reportCanceled bool,
+) func(io.Reader, context.Context) *instrumentedReader {
 	if prefix == "" {
 		prefix = "read."
 	}
 	instr := newInstruments(prefix, attrT, attrM, tracer, meter)
+	instr.reportCanceled = reportCanceled
 
 	return func(r io.Reader, ctx context.Context) *instrumentedReader {
 		rc, ok := r.(io.ReadCloser)

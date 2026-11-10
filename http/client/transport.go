@@ -97,7 +97,11 @@ func readWrapperBuilder(metricsOpts *TransportMetricsOptions, tracesOpts *Transp
 		t = tracer
 	}
 
-	irf := otelio.NewInstrumentedReaderFactory("http.client.response.read.", attrT, attrM, t, m)
+	newReaderFactory := otelio.NewInstrumentedReaderFactory
+	if tracesOpts.ReportCanceled {
+		newReaderFactory = otelio.NewCancelAwareInstrumentedReaderFactory
+	}
+	irf := newReaderFactory("http.client.response.read.", attrT, attrM, t, m)
 	return func(r io.Reader, ctx context.Context) io.ReadCloser {
 		return irf(r, ctx)
 	}

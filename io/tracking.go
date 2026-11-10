@@ -58,8 +58,12 @@ func (t *ioTracking) end(err error) {
 	var metricAttrOpts metric.MeasurementOption // <- we can move this to the instr parte
 	if t.gotError != nil {
 		metricAttrOpts = t.instr.metricAttributeSetWithErrorOpt
-		t.span.RecordError(t.gotError)
-		t.span.SetStatus(codes.Error, t.gotError.Error())
+		if t.instr.reportCanceled && t.ctx.Err() == context.Canceled {
+			t.span.SetAttributes(attribute.Bool("canceled", true))
+		} else {
+			t.span.RecordError(t.gotError)
+			t.span.SetStatus(codes.Error, t.gotError.Error())
+		}
 	} else {
 		t.span.SetStatus(codes.Ok, "")
 		metricAttrOpts = t.instr.metricAttributeSetOpt

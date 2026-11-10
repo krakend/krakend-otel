@@ -53,8 +53,10 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 	}
 
 	strictSemConv := ""
+	reportCanceled := false
 	if g := otelCfg.GlobalOpts(); g != nil {
 		strictSemConv = g.SemConv
+		reportCanceled = g.ReportClientDisconnects
 	}
 
 	opts := otelCfg.BackendOpts(cfg)
@@ -113,6 +115,7 @@ func InstrumentedHTTPClientFactory(clientFactory transport.HTTPClientFactory,
 			FixedAttributes:    traceAttrs,
 			ReportHeaders:      opts.Traces.ReportHeaders,
 			SkipHeaders:        opts.Traces.SkipHeaders,
+			ReportCanceled:     reportCanceled,
 		},
 		OTELInstance: otelState,
 	}
