@@ -26,15 +26,11 @@ func TestTransportTraces_endCanceled(t *testing.T) {
 		wantCanceled   bool
 	}{
 		"disabled, canceled": {
-			reportCanceled: false, err: canceledErr,
+			reportCanceled: false, err: canceledErr, ctxCanceled: true,
 			wantStatus: codes.Error, wantCanceled: false,
 		},
-		"enabled, canceled error": {
-			reportCanceled: true, err: canceledErr,
-			wantStatus: codes.Unset, wantCanceled: true,
-		},
-		"enabled, canceled context": {
-			reportCanceled: true, err: errors.New("connection reset"), ctxCanceled: true,
+		"enabled, canceled": {
+			reportCanceled: true, err: canceledErr, ctxCanceled: true,
 			wantStatus: codes.Unset, wantCanceled: true,
 		},
 		"enabled, other error": {

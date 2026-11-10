@@ -72,7 +72,7 @@ func (t *middlewareTracer) end(ctx context.Context, span trace.Span, resp *proxy
 		// errors gathered from several backends do not unwrap to context.Canceled,
 		// so the context tells when the request was canceled
 		canceled := errors.Is(err, context.Canceled) ||
-			(t.reportClientDisconnects && errors.Is(ctx.Err(), context.Canceled))
+			(t.reportClientDisconnects && ctx.Err() == context.Canceled)
 		if canceled {
 			span.SetAttributes(attribute.Bool("canceled", true))
 		} else {

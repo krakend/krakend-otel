@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"net"
 	"net/http"
 	"net/textproto"
@@ -58,7 +57,7 @@ func (h *trackingHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	h.next.ServeHTTP(rw, r)
 	// the request context is only canceled before the end of the handler
 	// when the client closes the connection
-	t.clientDisconnected = h.reportClientDisconnects && errors.Is(r.Context().Err(), context.Canceled)
+	t.clientDisconnected = h.reportClientDisconnects && r.Context().Err() == context.Canceled
 	t.Finish()
 	h.traces.end(t)
 	h.metrics.report(t, r)

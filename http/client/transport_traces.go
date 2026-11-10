@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"net/textproto"
 	"strings"
@@ -109,7 +108,7 @@ func (t *transportTraces) end(rtt *roundTripTracking) {
 	}
 
 	if rtt.err != nil {
-		if t.reportCanceled && (errors.Is(rtt.err, context.Canceled) || errors.Is(rtt.req.Context().Err(), context.Canceled)) {
+		if t.reportCanceled && rtt.req.Context().Err() == context.Canceled {
 			rtt.span.SetAttributes(attribute.Bool("canceled", true))
 		} else {
 			rtt.span.RecordError(rtt.err)

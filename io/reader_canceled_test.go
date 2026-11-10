@@ -23,15 +23,11 @@ func TestCancelAwareInstrumentedReaderFactory(t *testing.T) {
 		wantCanceled bool
 	}{
 		"plain factory, canceled": {
-			cancelAware: false, readErr: context.Canceled,
+			cancelAware: false, readErr: context.Canceled, ctxCanceled: true,
 			wantStatus: codes.Error, wantCanceled: false,
 		},
-		"cancel aware, canceled error": {
-			cancelAware: true, readErr: fmt.Errorf("read: %w", context.Canceled),
-			wantStatus: codes.Unset, wantCanceled: true,
-		},
-		"cancel aware, canceled context": {
-			cancelAware: true, readErr: errors.New("body closed"), ctxCanceled: true,
+		"cancel aware, canceled": {
+			cancelAware: true, readErr: fmt.Errorf("read: %w", context.Canceled), ctxCanceled: true,
 			wantStatus: codes.Unset, wantCanceled: true,
 		},
 		"cancel aware, other error": {
