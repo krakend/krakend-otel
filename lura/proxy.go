@@ -18,7 +18,7 @@ func tracesMiddleware(next proxy.Proxy, mt *middlewareTracer) func(ctx context.C
 	return func(ctx context.Context, req *proxy.Request) (*proxy.Response, error) {
 		ctx, span := mt.start(ctx, req)
 		resp, err := next(ctx, req)
-		mt.end(span, resp, err)
+		mt.end(ctx, span, resp, err)
 		return resp, err
 	}
 }
@@ -40,7 +40,7 @@ func metricsAndTracesMiddleware(next proxy.Proxy, mm *middlewareMeter, mt *middl
 		resp, err := next(ctx, req)
 		durationInSecs := float64(time.Since(startedAt)) / float64(time.Second)
 		mm.report(ctx, durationInSecs, resp, err)
-		mt.end(span, resp, err)
+		mt.end(ctx, span, resp, err)
 		return resp, err
 	}
 }
@@ -49,7 +49,7 @@ func metricsAndTracesMiddleware(next proxy.Proxy, mm *middlewareMeter, mt *middl
 // and report the duration of this stage in metrics if enabled.
 func middleware(gs state.OTEL, metricsEnabled bool, tracesEnabled bool,
 	stageName string, urlPattern string, metricsAttrs, tracesAttrs []attribute.KeyValue,
-	reportHeaders bool, skipHeaders []string,
+	reportHeaders bool, skipHeaders []string, reportClientDisconnects bool,
 ) proxy.Middleware {
 	var mt *middlewareTracer
 	var mm *middlewareMeter
@@ -62,7 +62,7 @@ func middleware(gs state.OTEL, metricsEnabled bool, tracesEnabled bool,
 		}
 	}
 	if tracesEnabled {
-		mt = newMiddlewareTracer(gs, urlPattern, stageName, reportHeaders, skipHeaders, tracesAttrs)
+		mt = newMiddlewareTracer(gs, urlPattern, stageName, reportHeaders, skipHeaders, tracesAttrs, reportClientDisconnects)
 		if mt == nil {
 			// TODO: log the error
 			tracesEnabled = false
@@ -137,7 +137,7 @@ func ProxyFactory(pf proxy.Factory) proxy.FactoryFunc {
 
 		return middleware(gs, !pipeOpts.DisableMetrics, !pipeOpts.DisableTraces,
 			"proxy", urlPattern, metricsAttrs, tracesAttrs, pipeOpts.ReportHeaders,
-			pipeOpts.SkipHeaders)(next), nil
+			pipeOpts.SkipHeaders, reportClientDisconnects(otelCfg))(next), nil
 	}
 }
 
@@ -194,6 +194,11 @@ func BackendFactory(bf proxy.BackendFactory) proxy.BackendFactory {
 
 		return middleware(gs, !metricsDisabled, !tracesDisabled,
 			"backend", urlPattern, metricsAttrs, tracesAttrs, reportHeaders,
-			backendOpts.Traces.SkipHeaders)(next)
+			backendOpts.Traces.SkipHeaders, reportClientDisconnects(otelCfg))(next)
 	}
+}
+
+func reportClientDisconnects(cfg state.Config) bool {
+	gCfg := cfg.GlobalOpts()
+	return gCfg != nil && gCfg.ReportClientDisconnects
 }

@@ -80,8 +80,12 @@ func (m *metricsHTTP) report(t *tracking, r *http.Request) {
 	dynAttrs = append(dynAttrs,
 		semconv.HTTPRequestMethodKey.String(validMethod(r)), // required attribute
 		semconv.URLScheme(urlScheme),                        // required attribute
-		semconv.HTTPRoute(t.EndpointPattern()),              // required if available
-		semconv.HTTPResponseStatusCode(t.responseStatus))    // required if was sent
+		semconv.HTTPRoute(t.EndpointPattern()))              // required if available
+	if t.clientDisconnected {
+		dynAttrs = append(dynAttrs, clientDisconnectedAttr)
+	} else {
+		dynAttrs = append(dynAttrs, semconv.HTTPResponseStatusCode(t.responseStatus)) // required if was sent
+	}
 	dynAttrsOpts := metric.WithAttributes(dynAttrs...)
 
 	m.latency.Record(t.ctx, t.latencyInSecs, m.fixedAttrsOpts, dynAttrsOpts)

@@ -33,6 +33,9 @@ type instruments struct {
 	traceSizeAttrName string
 	traceTimeAttrName string
 	traceName         string
+	// reportCanceled marks the spans of canceled operations with a canceled
+	// attribute instead of an error status
+	reportCanceled bool
 
 	// attribute sets to be reused, and not computed in the
 	// critical path

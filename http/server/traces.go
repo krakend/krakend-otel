@@ -91,9 +91,13 @@ func (t *tracesHTTP) end(tr *tracking) {
 
 	tr.span.SetAttributes(
 		semconv.HTTPRoute(tr.EndpointPattern()),
-		semconv.HTTPResponseStatusCode(tr.responseStatus),
 		semconv.HTTPResponseBodySize(tr.responseSize),
 	)
+	if tr.clientDisconnected {
+		tr.span.SetAttributes(clientDisconnectedAttr)
+	} else {
+		tr.span.SetAttributes(semconv.HTTPResponseStatusCode(tr.responseStatus))
+	}
 	tr.span.SetAttributes(tr.tracesStaticAttrs...)
 
 	if tr.responseHeaders != nil {
@@ -110,11 +114,14 @@ func (t *tracesHTTP) end(tr *tracking) {
 			}
 		}
 	}
-	if len(tr.writeErrs) > 0 {
+	switch {
+	case tr.clientDisconnected:
+		// the status is left unset, as the gateway did not fail
+	case len(tr.writeErrs) > 0:
 		e := tr.writeErrs[0]
 		tr.span.RecordError(e)
 		tr.span.SetStatus(codes.Error, e.Error())
-	} else {
+	default:
 		tr.span.SetStatus(codes.Ok, "")
 	}
 	tr.span.End()
